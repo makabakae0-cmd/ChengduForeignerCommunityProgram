@@ -31,6 +31,7 @@ export const createCloudbaseProvider = (): ApiProvider => ({
   },
   places: {
     list: notImplemented,
+    listAdmin: notImplemented,
     detail: notImplemented,
     mapMarkers: notImplemented,
     create: notImplemented,

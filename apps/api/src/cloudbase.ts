@@ -366,6 +366,14 @@ export const main: CloudbaseEventHandler = async (event, context) => {
       return ok(await provider.places.create(input), requestId, 201);
     }
 
+    if (method === "GET" && pathname === "/admin/places") {
+      await requireRole({ eventID: requestId, httpContext }, [
+        "community_admin",
+        "system_admin"
+      ]);
+      return ok(await provider.places.listAdmin(), requestId);
+    }
+
     {
       const match = matchRoute("/admin/places/:id", pathname);
       if (method === "PATCH" && match.matched) {

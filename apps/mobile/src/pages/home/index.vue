@@ -53,8 +53,27 @@ onMounted(load);
     </SectionPanel>
 
     <SectionPanel title="Places" subtitle="地点模块与地图入口已预留">
-      <view v-for="place in places" :key="place._id" class="list-item" @click="open(`/pages/places/detail?id=${place._id}`)">
+      <view class="places-actions">
+        <button class="action-button" @click="open('/pages/places/map')">
+          打开地图主页
+        </button>
+        <button
+          class="action-button ghost"
+          @click="open('/pages/places/recommended')"
+        >
+          查看推荐地点
+        </button>
+      </view>
+      <view
+        v-for="place in places"
+        :key="place._id"
+        class="list-item"
+        @click="open(`/pages/places/detail?id=${place._id}`)"
+      >
         <view>{{ pickLocalized(state.locale, place.name_zh, place.name_en) }}</view>
+        <view class="caption">
+          {{ pickLocalized(state.locale, place.short_address_zh, place.short_address_en) }}
+        </view>
       </view>
     </SectionPanel>
 
@@ -127,5 +146,23 @@ onMounted(load);
   background: #ecfeff;
   text-align: center;
   font-weight: 600;
+}
+
+.places-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.action-button {
+  flex: 1;
+  background: #0f766e;
+  color: #ffffff;
+  font-size: 26rpx;
+}
+
+.action-button.ghost {
+  background: #ccfbf1;
+  color: #115e59;
 }
 </style>

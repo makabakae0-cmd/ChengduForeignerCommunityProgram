@@ -97,11 +97,16 @@ describe("api routes", () => {
       const placesData = await placesResponse.json();
       expect(placesResponse.status).toBe(200);
       expect(placesData.data.items.length).toBeGreaterThan(0);
+      expect(placesData.data.items[0]).toHaveProperty("short_address_zh");
+      expect(placesData.data.items[0]).not.toHaveProperty("gallery_urls");
 
       const placeDetailResponse = await fetch(
         `${baseUrl}/places/${placesData.data.items[0]._id}`
       );
+      const placeDetailData = await placeDetailResponse.json();
       expect(placeDetailResponse.status).toBe(200);
+      expect(placeDetailData.data).toHaveProperty("navigation");
+      expect(placeDetailData.data).toHaveProperty("share");
 
       const markersBeforeResponse = await fetch(
         `${baseUrl}/places/map-markers`
@@ -110,7 +115,15 @@ describe("api routes", () => {
       expect(markersBeforeResponse.status).toBe(200);
       expect(markersBeforeData.data.length).toBeGreaterThan(0);
       expect(markersBeforeData.data[0]).toHaveProperty("category_level_1");
+      expect(markersBeforeData.data[0]).toHaveProperty("is_recommended");
       expect(markersBeforeData.data[0]).not.toHaveProperty("address_zh");
+
+      const recommendedResponse = await fetch(
+        `${baseUrl}/places?recommended=true`
+      );
+      const recommendedData = await recommendedResponse.json();
+      expect(recommendedResponse.status).toBe(200);
+      expect(recommendedData.data.items.every((item: { is_recommended: boolean }) => item.is_recommended)).toBe(true);
 
       const createDraftPlaceResponse = await fetch(`${baseUrl}/admin/places`, {
         method: "POST",
@@ -121,8 +134,11 @@ describe("api routes", () => {
         body: JSON.stringify({
           name_zh: "地图草稿地点",
           name_en: "Draft Map Place",
+          cover_file_id: null,
+          cover_url: null,
           category_level_1: "service",
           category_level_2: "community",
+          tag_ids: ["service"],
           address_zh: "成都",
           address_en: "Chengdu",
           location: { latitude: 30.616, longitude: 104.063 },
@@ -130,9 +146,17 @@ describe("api routes", () => {
           business_hours_en: "Mon-Sun",
           intro_zh: "草稿",
           intro_en: "Draft",
+          recommended_reason_zh: null,
+          recommended_reason_en: null,
+          is_recommended: false,
+          recommended_rank: 0,
           gallery_file_ids: [],
           gallery_urls: [],
-          tencent_map_poi_id: null
+          tencent_map_poi_id: null,
+          supports_navigation: true,
+          supports_favorite: true,
+          supports_share: true,
+          status: "draft"
         })
       });
       const draftPlaceData = await createDraftPlaceResponse.json();
@@ -146,6 +170,20 @@ describe("api routes", () => {
           (item: { _id: string }) => item._id === draftPlaceData.data._id
         )
       ).toBe(false);
+
+      const draftDetailResponse = await fetch(
+        `${baseUrl}/places/${draftPlaceData.data._id}`
+      );
+      expect(draftDetailResponse.status).toBe(404);
+
+      const adminPlacesResponse = await fetch(`${baseUrl}/admin/places`, {
+        headers: {
+          "x-mock-user-id": "user_001"
+        }
+      });
+      const adminPlacesData = await adminPlacesResponse.json();
+      expect(adminPlacesResponse.status).toBe(200);
+      expect(adminPlacesData.data.items.some((item: { _id: string }) => item._id === draftPlaceData.data._id)).toBe(true);
 
       const announcementsResponse = await fetch(`${baseUrl}/announcements`);
       expect(announcementsResponse.status).toBe(200);

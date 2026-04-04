@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import type { PlaceMapMarker } from "@community-map/shared";
+import { onLoad } from "@dcloudio/uni-app";
 
 import { mobileApi } from "@/api/client";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
@@ -34,10 +35,12 @@ const { state } = useAppStore();
 const places = ref<PlaceMapMarker[]>([]);
 const loading = ref(true);
 const selectedPlaceId = ref<string | null>(null);
+const presetPlaceId = ref<string | null>(null);
 
 const selectedPlace = computed(
   () =>
     places.value.find((place) => place._id === selectedPlaceId.value) ??
+    places.value.find((place) => place._id === presetPlaceId.value) ??
     places.value[0] ??
     null
 );
@@ -75,7 +78,10 @@ const loadMarkers = async () => {
   try {
     const result = await mobileApi.places.mapMarkers();
     places.value = result.data;
-    selectedPlaceId.value = result.data[0]?._id ?? null;
+    selectedPlaceId.value =
+      result.data.find((place) => place._id === presetPlaceId.value)?._id ??
+      result.data[0]?._id ??
+      null;
   } finally {
     loading.value = false;
   }
@@ -103,15 +109,29 @@ const openDetail = () => {
   });
 };
 
+const openList = (recommended = false) => {
+  uni.navigateTo({
+    url: recommended ? "/pages/places/recommended" : "/pages/places/index"
+  });
+};
+
 onMounted(loadMarkers);
+
+onLoad((query) => {
+  presetPlaceId.value = query?.id ? String(query.id) : null;
+});
 </script>
 
 <template>
   <view class="page">
     <view class="title">社区地点地图</view>
-    <view class="subtitle"
-      >点击地图上的 marker 查看地点，并进入详情页或发起导航。</view
-    >
+    <view class="subtitle">
+      `Places` 模块主入口：先在地图上浏览，再进入列表、推荐或详情。
+    </view>
+    <view class="action-row">
+      <button class="secondary" @click="openList(false)">查看完整列表</button>
+      <button class="secondary" @click="openList(true)">推荐地点</button>
+    </view>
 
     <map
       class="map-card"
@@ -135,6 +155,7 @@ onMounted(loadMarkers);
         }}
       </view>
       <view class="detail-meta">{{ selectedPlace.category_level_1 }}</view>
+      <view v-if="selectedPlace.is_recommended" class="pill">推荐地点</view>
       <view class="detail-meta">
         {{ selectedPlace.location.latitude }},
         {{ selectedPlace.location.longitude }}
@@ -172,6 +193,18 @@ onMounted(loadMarkers);
   background: #e2e8f0;
 }
 
+.action-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.secondary {
+  flex: 1;
+  background: #ccfbf1;
+  color: #115e59;
+}
+
 .detail-card {
   margin-top: 24rpx;
   background: #ffffff;
@@ -188,6 +221,16 @@ onMounted(loadMarkers);
 .detail-meta {
   margin-top: 10rpx;
   color: #64748b;
+}
+
+.pill {
+  display: inline-flex;
+  margin-top: 14rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 22rpx;
 }
 
 .primary {

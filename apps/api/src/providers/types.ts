@@ -9,6 +9,8 @@ import type {
   Notification,
   PageResult,
   Place,
+  PlaceDetail,
+  PlaceListItem,
   PlaceMapMarker,
   Post,
   User
@@ -82,8 +84,13 @@ export interface ApiProvider {
       pageSize?: number;
       keyword?: string;
       communityId?: string;
-    }): Promise<PageResult<Place>>;
-    detail(id: string): Promise<Place | null>;
+      category?: string;
+      tags?: string[];
+      recommended?: boolean;
+      sort?: "recommended" | "name";
+    }): Promise<PageResult<PlaceListItem>>;
+    listAdmin(): Promise<PageResult<Place>>;
+    detail(id: string): Promise<PlaceDetail | null>;
     mapMarkers(): Promise<PlaceMapMarker[]>;
     create(input: Partial<Place>): Promise<Place>;
     update(id: string, input: Partial<Place>): Promise<Place | null>;

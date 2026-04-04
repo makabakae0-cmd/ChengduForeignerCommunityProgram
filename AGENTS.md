@@ -15,4 +15,14 @@ Use `@/openspec/AGENTS.md` to learn:
 
 Keep this managed block so 'openspec update' can refresh the instructions.
 
+## Code hygiene guardrails (always-on)
+
+- Prioritize correctness and maintainability over cosmetic changes.
+    
+- Keep scope tight: don’t refactor unrelated areas; avoid “while I’m here” edits.
+    
+- Write for the next reader: choose clear names, straightforward control flow, and readable structure.
+    
+- Avoid clever compactness (dense one-liners, nested ternaries). Prefer if/else or switch when branching grows.
+
 <!-- OPENSPEC:END -->

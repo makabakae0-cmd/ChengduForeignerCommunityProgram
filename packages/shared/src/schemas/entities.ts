@@ -81,8 +81,11 @@ export const PlaceSchema = z.object({
   community_id: z.string(),
   name_zh: z.string(),
   name_en: z.string(),
+  cover_file_id: z.string().nullable(),
+  cover_url: z.string().url().nullable(),
   category_level_1: z.string(),
   category_level_2: z.string(),
+  tag_ids: z.array(z.string()),
   address_zh: z.string(),
   address_en: z.string(),
   location: CoordinatesSchema,
@@ -91,8 +94,15 @@ export const PlaceSchema = z.object({
   business_hours_en: z.string(),
   intro_zh: z.string(),
   intro_en: z.string(),
+  recommended_reason_zh: z.string().nullable(),
+  recommended_reason_en: z.string().nullable(),
+  is_recommended: z.boolean(),
+  recommended_rank: z.number().int().min(0),
   gallery_file_ids: z.array(z.string()),
   gallery_urls: z.array(z.string().url()),
+  supports_navigation: z.boolean(),
+  supports_favorite: z.boolean(),
+  supports_share: z.boolean(),
   status: z.enum(PLACE_STATUSES)
 });
 

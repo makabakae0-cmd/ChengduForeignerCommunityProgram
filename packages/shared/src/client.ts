@@ -122,6 +122,7 @@ export const createHttpClient = (
       privateUrl: (input) => request("POST", apiPaths.files.privateUrl, input)
     },
     admin: {
+      listPlaces: () => request("GET", apiPaths.admin.listPlaces),
       createEvent: (input) => request("POST", apiPaths.admin.createEvent, input),
       updateEvent: (id, input) =>
         request("PATCH", apiPaths.admin.updateEvent(id), input),

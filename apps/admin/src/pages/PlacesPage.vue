@@ -1,53 +1,280 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
+import type { Place } from "@community-map/shared";
 
 import { adminApi } from "@/api/client";
 
 const loading = ref(false);
-const places = ref<Array<any>>([]);
-const form = reactive({
+const places = ref<Place[]>([]);
+const saving = ref(false);
+const editingId = ref<string | null>(null);
+
+const createEmptyForm = () => ({
   name_zh: "新增地点草稿",
   name_en: "New Draft Place",
-  category_level_1: "service",
-  category_level_2: "community",
+  cover_file_id: null as string | null,
+  cover_url: "",
+  category_level_1: "public-service",
+  category_level_2: "community-center",
+  tag_ids_text: "service,community",
   address_zh: "桐梓林待补充地址",
   address_en: "Address pending",
-  location: { latitude: 30.615, longitude: 104.062 },
+  latitude: 30.615,
+  longitude: 104.062,
+  tencent_map_poi_id: "",
   business_hours_zh: "待补充",
   business_hours_en: "Pending",
   intro_zh: "待补充简介",
-  intro_en: "Introduction pending"
+  intro_en: "Introduction pending",
+  recommended_reason_zh: "",
+  recommended_reason_en: "",
+  is_recommended: false,
+  recommended_rank: 0,
+  gallery_urls_text: "",
+  status: "draft" as Place["status"],
+  supports_navigation: true,
+  supports_favorite: true,
+  supports_share: true
+});
+
+const form = reactive(createEmptyForm());
+
+const fillForm = (place?: Place) => {
+  Object.assign(form, createEmptyForm());
+
+  if (!place) {
+    editingId.value = null;
+    return;
+  }
+
+  editingId.value = place._id;
+  Object.assign(form, {
+    name_zh: place.name_zh,
+    name_en: place.name_en,
+    cover_file_id: place.cover_file_id,
+    cover_url: place.cover_url ?? "",
+    category_level_1: place.category_level_1,
+    category_level_2: place.category_level_2,
+    tag_ids_text: place.tag_ids.join(","),
+    address_zh: place.address_zh,
+    address_en: place.address_en,
+    latitude: place.location.latitude,
+    longitude: place.location.longitude,
+    tencent_map_poi_id: place.tencent_map_poi_id ?? "",
+    business_hours_zh: place.business_hours_zh,
+    business_hours_en: place.business_hours_en,
+    intro_zh: place.intro_zh,
+    intro_en: place.intro_en,
+    recommended_reason_zh: place.recommended_reason_zh ?? "",
+    recommended_reason_en: place.recommended_reason_en ?? "",
+    is_recommended: place.is_recommended,
+    recommended_rank: place.recommended_rank,
+    gallery_urls_text: place.gallery_urls.join(","),
+    status: place.status,
+    supports_navigation: place.supports_navigation,
+    supports_favorite: place.supports_favorite,
+    supports_share: place.supports_share
+  });
+};
+
+const buildPayload = () => ({
+  name_zh: form.name_zh,
+  name_en: form.name_en,
+  cover_file_id: form.cover_file_id,
+  cover_url: form.cover_url || null,
+  category_level_1: form.category_level_1,
+  category_level_2: form.category_level_2,
+  tag_ids: form.tag_ids_text
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
+  address_zh: form.address_zh,
+  address_en: form.address_en,
+  location: {
+    latitude: Number(form.latitude),
+    longitude: Number(form.longitude)
+  },
+  tencent_map_poi_id: form.tencent_map_poi_id || null,
+  business_hours_zh: form.business_hours_zh,
+  business_hours_en: form.business_hours_en,
+  intro_zh: form.intro_zh,
+  intro_en: form.intro_en,
+  recommended_reason_zh: form.recommended_reason_zh || null,
+  recommended_reason_en: form.recommended_reason_en || null,
+  is_recommended: form.is_recommended,
+  recommended_rank: Number(form.recommended_rank),
+  gallery_file_ids: [],
+  gallery_urls: form.gallery_urls_text
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
+  supports_navigation: form.supports_navigation,
+  supports_favorite: form.supports_favorite,
+  supports_share: form.supports_share,
+  status: form.status
 });
 
 const load = async () => {
   loading.value = true;
   try {
-    const result = await adminApi.places.list();
+    const result = await adminApi.admin.listPlaces();
     places.value = result.data.items;
   } finally {
     loading.value = false;
   }
 };
 
-const createPlace = async () => {
-  await adminApi.admin.createPlace(form);
+const submit = async () => {
+  saving.value = true;
+  const payload = buildPayload();
+
+  if (editingId.value) {
+    await adminApi.admin.updatePlace(editingId.value, payload);
+  } else {
+    await adminApi.admin.createPlace(payload);
+  }
+
+  saving.value = false;
+  fillForm();
   await load();
 };
 
-onMounted(load);
+const startCreate = () => fillForm();
+const startEdit = (place: Place) => fillForm(place);
+const quickPublish = async (place: Place, status: Place["status"]) => {
+  await adminApi.admin.updatePlace(place._id, { status });
+  await load();
+};
+
+onMounted(async () => {
+  fillForm();
+  await load();
+});
 </script>
 
 <template>
   <div class="page-card">
     <div class="page-header">
       <h2>地点管理</h2>
-      <el-button type="primary" @click="createPlace">新增地点</el-button>
+      <el-button type="primary" @click="startCreate">新增地点</el-button>
+    </div>
+    <div class="editor-grid">
+      <div class="editor-card">
+        <h3>{{ editingId ? "编辑地点" : "新建地点" }}</h3>
+        <div class="form-grid">
+          <el-input v-model="form.name_zh" placeholder="中文名" />
+          <el-input v-model="form.name_en" placeholder="英文名" />
+          <el-input v-model="form.category_level_1" placeholder="一级分类" />
+          <el-input v-model="form.category_level_2" placeholder="二级分类" />
+          <el-input v-model="form.tag_ids_text" placeholder="标签，逗号分隔" />
+          <el-input v-model="form.status" placeholder="状态" />
+          <el-input v-model="form.address_zh" placeholder="中文地址" />
+          <el-input v-model="form.address_en" placeholder="英文地址" />
+          <el-input v-model="form.cover_url" placeholder="封面 URL" />
+          <el-input v-model="form.tencent_map_poi_id" placeholder="腾讯 POI ID" />
+          <el-input v-model.number="form.latitude" placeholder="纬度" />
+          <el-input v-model.number="form.longitude" placeholder="经度" />
+          <el-input v-model="form.business_hours_zh" placeholder="中文营业时间" />
+          <el-input v-model="form.business_hours_en" placeholder="英文营业时间" />
+          <el-input
+            v-model="form.recommended_reason_zh"
+            placeholder="中文推荐理由"
+          />
+          <el-input
+            v-model="form.recommended_reason_en"
+            placeholder="英文推荐理由"
+          />
+          <el-input
+            v-model.number="form.recommended_rank"
+            placeholder="推荐排序"
+          />
+          <el-input
+            v-model="form.gallery_urls_text"
+            placeholder="图集 URL，逗号分隔"
+          />
+        </div>
+        <el-input
+          v-model="form.intro_zh"
+          type="textarea"
+          :rows="3"
+          placeholder="中文简介"
+        />
+        <el-input
+          v-model="form.intro_en"
+          type="textarea"
+          :rows="3"
+          placeholder="英文简介"
+          class="mt-12"
+        />
+        <div class="switch-row">
+          <el-switch v-model="form.is_recommended" active-text="推荐位" />
+          <el-switch v-model="form.supports_navigation" active-text="支持导航" />
+          <el-switch v-model="form.supports_favorite" active-text="收藏入口" />
+          <el-switch v-model="form.supports_share" active-text="分享入口" />
+        </div>
+        <div class="editor-actions">
+          <el-button @click="startCreate">重置</el-button>
+          <el-button type="primary" :loading="saving" @click="submit">
+            {{ editingId ? "保存修改" : "创建地点" }}
+          </el-button>
+        </div>
+      </div>
     </div>
     <el-table :data="places" v-loading="loading">
       <el-table-column prop="name_zh" label="中文名" min-width="180" />
       <el-table-column prop="name_en" label="英文名" min-width="180" />
       <el-table-column prop="category_level_1" label="一级分类" width="140" />
+      <el-table-column prop="is_recommended" label="推荐" width="90">
+        <template #default="{ row }">
+          {{ row.is_recommended ? "是" : "否" }}
+        </template>
+      </el-table-column>
       <el-table-column prop="status" label="状态" width="120" />
+      <el-table-column label="操作" width="280">
+        <template #default="{ row }">
+          <el-button link type="primary" @click="startEdit(row)">编辑</el-button>
+          <el-button
+            link
+            type="success"
+            @click="quickPublish(row, 'published')"
+          >
+            发布
+          </el-button>
+          <el-button link @click="quickPublish(row, 'draft')">转草稿</el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </div>
 </template>
+
+<style scoped>
+.editor-grid {
+  margin-bottom: 20px;
+}
+
+.editor-card {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.switch-row,
+.editor-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.mt-12 {
+  margin-top: 12px;
+}
+</style>

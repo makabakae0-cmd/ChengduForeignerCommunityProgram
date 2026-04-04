@@ -39,7 +39,7 @@
     {
       "path": "pages/places/index",
       "style": {
-        "navigationBarTitleText": "Places"
+        "navigationBarTitleText": "地点列表"
       }
     },
     {
@@ -52,6 +52,12 @@
       "path": "pages/places/map",
       "style": {
         "navigationBarTitleText": "地点地图"
+      }
+    },
+    {
+      "path": "pages/places/recommended",
+      "style": {
+        "navigationBarTitleText": "推荐地点"
       }
     },
     {
@@ -109,7 +115,7 @@
         "text": "Discover"
       },
       {
-        "pagePath": "pages/places/index",
+        "pagePath": "pages/places/map",
         "text": "Places"
       }
     ]

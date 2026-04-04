@@ -6,6 +6,8 @@ import {
   FileAssetSchema,
   LocaleSchema,
   PageResultSchema,
+  PlaceDetailSchema,
+  PlaceListItemSchema,
   PlaceMapMarkerSchema,
   PlaceSchema,
   PostSchema,
@@ -20,8 +22,11 @@ describe("shared contracts", () => {
       community_id: "tongzilin",
       name_zh: "桐梓林社区中心",
       name_en: "Tongzilin Community Center",
+      cover_file_id: null,
+      cover_url: null,
       category_level_1: "service",
       category_level_2: "community",
+      tag_ids: ["service"],
       address_zh: "成都",
       address_en: "Chengdu",
       location: { latitude: 30.6, longitude: 104.0 },
@@ -30,12 +35,80 @@ describe("shared contracts", () => {
       business_hours_en: "Every day",
       intro_zh: "简介",
       intro_en: "Intro",
+      recommended_reason_zh: null,
+      recommended_reason_en: null,
+      is_recommended: false,
+      recommended_rank: 0,
       gallery_file_ids: [],
       gallery_urls: [],
+      supports_navigation: true,
+      supports_favorite: true,
+      supports_share: true,
       status: "published"
     });
 
     expect(place.name_en).toBe("Tongzilin Community Center");
+  });
+
+  it("accepts split list and detail place payloads", () => {
+    const item = PlaceListItemSchema.parse({
+      _id: "place_001",
+      name_zh: "桐梓林社区中心",
+      name_en: "Tongzilin Community Center",
+      cover_url: "https://example.com/place.jpg",
+      category_level_1: "public-service",
+      category_level_2: "community-center",
+      short_address_zh: "成都市武侯区",
+      short_address_en: "Wuhou District, Chengdu",
+      summary_zh: "简介",
+      summary_en: "Summary",
+      tag_ids: ["service"],
+      is_recommended: true,
+      recommended_reason_zh: "推荐理由",
+      recommended_reason_en: "Reason",
+      supports_navigation: true
+    });
+    const detail = PlaceDetailSchema.parse({
+      _id: "place_001",
+      community_id: "tongzilin",
+      name_zh: "桐梓林社区中心",
+      name_en: "Tongzilin Community Center",
+      cover_url: "https://example.com/place.jpg",
+      category_level_1: "public-service",
+      category_level_2: "community-center",
+      tag_ids: ["service"],
+      address_zh: "成都",
+      address_en: "Chengdu",
+      location: { latitude: 30.6, longitude: 104.0 },
+      business_hours_zh: "周一至周日",
+      business_hours_en: "Every day",
+      intro_zh: "简介",
+      intro_en: "Intro",
+      gallery_urls: ["https://example.com/gallery.jpg"],
+      is_recommended: true,
+      recommended_reason_zh: "推荐理由",
+      recommended_reason_en: "Reason",
+      supports_navigation: true,
+      supports_favorite: true,
+      supports_share: true,
+      navigation: {
+        latitude: 30.6,
+        longitude: 104.0,
+        name_zh: "桐梓林社区中心",
+        name_en: "Tongzilin Community Center",
+        address_zh: "成都",
+        address_en: "Chengdu"
+      },
+      share: {
+        title_zh: "桐梓林社区中心",
+        title_en: "Tongzilin Community Center",
+        summary_zh: "简介",
+        summary_en: "Intro"
+      }
+    });
+
+    expect(item.short_address_en).toContain("Chengdu");
+    expect(detail.navigation.latitude).toBe(30.6);
   });
 
   it("accepts a place map marker payload", () => {
@@ -44,6 +117,7 @@ describe("shared contracts", () => {
       name_zh: "桐梓林社区中心",
       name_en: "Tongzilin Community Center",
       category_level_1: "public-service",
+      is_recommended: true,
       location: {
         latitude: 30.615,
         longitude: 104.0625

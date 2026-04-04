@@ -74,6 +74,7 @@ describe("shared api clients", () => {
           name_zh: "社区中心",
           name_en: "Community Center",
           category_level_1: "public-service",
+          is_recommended: true,
           location: { latitude: 30.615, longitude: 104.0625 }
         }
       ]
@@ -91,10 +92,43 @@ describe("shared api clients", () => {
     expect(httpResult.success).toBe(true);
     expect(mockResult.data[0]).toHaveProperty("category_level_1");
     expect(httpResult.data[0]).toHaveProperty("category_level_1");
+    expect(httpResult.data[0]).toHaveProperty("is_recommended");
     expect(httpResult.data[0]).not.toHaveProperty("address_zh");
     expect(requester).toHaveBeenCalledWith(
       "GET",
       "http://localhost:8787/places/map-markers",
+      undefined,
+      { "x-mock-user-id": "user_001" }
+    );
+  });
+
+  it("serializes place list query for recommended filtering", async () => {
+    const requester = vi.fn(async () => ({
+      success: true,
+      requestId: "req_http_003",
+      data: {
+        items: [],
+        page: 1,
+        pageSize: 10,
+        total: 0
+      }
+    }));
+    const httpClient = createHttpClient({
+      actorId: "user_001",
+      baseUrl: "http://localhost:8787",
+      requester: requester as unknown as HttpRequester
+    });
+
+    await httpClient.places.list({
+      category: "public-service",
+      tags: ["service", "community"],
+      recommended: true,
+      sort: "recommended"
+    });
+
+    expect(requester).toHaveBeenCalledWith(
+      "GET",
+      "http://localhost:8787/places?category=public-service&tags=service%2Ccommunity&recommended=true&sort=recommended",
       undefined,
       { "x-mock-user-id": "user_001" }
     );

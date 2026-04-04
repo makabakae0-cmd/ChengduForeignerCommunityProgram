@@ -6,6 +6,8 @@ import type {
   EventTicket,
   FileAsset,
   Place,
+  PlaceDetail,
+  PlaceListItem,
   Post,
   User
 } from "../types/entities";
@@ -18,6 +20,11 @@ interface PageParams {
   page?: number;
   pageSize?: number;
   keyword?: string;
+  communityId?: string;
+  category?: string;
+  tags?: string[];
+  recommended?: boolean;
+  sort?: "recommended" | "name";
 }
 
 const DEFAULT_PAGE = 1;
@@ -49,6 +56,83 @@ const keywordMatch = (value: string | null | undefined, keyword?: string) => {
 
 const idFrom = (prefix: string) =>
   `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
+
+const shortAddress = (value: string) => value.split("，")[0]?.split(",")[0] ?? value;
+
+const sortPlaces = (items: Place[], sort: PageParams["sort"]) => {
+  if (sort === "name") {
+    return [...items].sort((left, right) => left.name_en.localeCompare(right.name_en));
+  }
+
+  return [...items].sort((left, right) => {
+    if (left.is_recommended !== right.is_recommended) {
+      return left.is_recommended ? -1 : 1;
+    }
+
+    if (left.recommended_rank !== right.recommended_rank) {
+      return left.recommended_rank - right.recommended_rank;
+    }
+
+    return left.name_en.localeCompare(right.name_en);
+  });
+};
+
+const toPlaceListItem = (place: Place): PlaceListItem => ({
+  _id: place._id,
+  name_zh: place.name_zh,
+  name_en: place.name_en,
+  cover_url: place.cover_url,
+  category_level_1: place.category_level_1,
+  category_level_2: place.category_level_2,
+  short_address_zh: shortAddress(place.address_zh),
+  short_address_en: shortAddress(place.address_en),
+  summary_zh: place.intro_zh,
+  summary_en: place.intro_en,
+  tag_ids: place.tag_ids,
+  is_recommended: place.is_recommended,
+  recommended_reason_zh: place.recommended_reason_zh,
+  recommended_reason_en: place.recommended_reason_en,
+  supports_navigation: place.supports_navigation
+});
+
+const toPlaceDetail = (place: Place): PlaceDetail => ({
+  _id: place._id,
+  community_id: place.community_id,
+  name_zh: place.name_zh,
+  name_en: place.name_en,
+  cover_url: place.cover_url,
+  category_level_1: place.category_level_1,
+  category_level_2: place.category_level_2,
+  tag_ids: place.tag_ids,
+  address_zh: place.address_zh,
+  address_en: place.address_en,
+  location: place.location,
+  business_hours_zh: place.business_hours_zh,
+  business_hours_en: place.business_hours_en,
+  intro_zh: place.intro_zh,
+  intro_en: place.intro_en,
+  gallery_urls: place.gallery_urls,
+  is_recommended: place.is_recommended,
+  recommended_reason_zh: place.recommended_reason_zh,
+  recommended_reason_en: place.recommended_reason_en,
+  supports_navigation: place.supports_navigation,
+  supports_favorite: place.supports_favorite,
+  supports_share: place.supports_share,
+  navigation: {
+    latitude: place.location.latitude,
+    longitude: place.location.longitude,
+    name_zh: place.name_zh,
+    name_en: place.name_en,
+    address_zh: place.address_zh,
+    address_en: place.address_en
+  },
+  share: {
+    title_zh: place.name_zh,
+    title_en: place.name_en,
+    summary_zh: place.recommended_reason_zh ?? place.intro_zh,
+    summary_en: place.recommended_reason_en ?? place.intro_en
+  }
+});
 
 export const createMockService = (seed?: Partial<MockDataset>) => {
   const state: MockDataset = {
@@ -290,17 +374,57 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
     },
     places: {
       list(params: PageParams = {}) {
-        const places = state.places.filter(
-          (place) =>
-            keywordMatch(place.name_zh, params.keyword) ||
-            keywordMatch(place.name_en, params.keyword) ||
-            keywordMatch(place.intro_zh, params.keyword) ||
-            keywordMatch(place.intro_en, params.keyword)
+        const places = sortPlaces(
+          state.places.filter((place) => {
+            if (place.status !== "published") {
+              return false;
+            }
+
+            if (params.communityId && place.community_id !== params.communityId) {
+              return false;
+            }
+
+            if (
+              params.category &&
+              place.category_level_1 !== params.category &&
+              place.category_level_2 !== params.category
+            ) {
+              return false;
+            }
+
+            if (
+              params.tags?.length &&
+              !params.tags.every((tag) => place.tag_ids.includes(tag))
+            ) {
+              return false;
+            }
+
+            if (params.recommended && !place.is_recommended) {
+              return false;
+            }
+
+            return (
+              keywordMatch(place.name_zh, params.keyword) ||
+              keywordMatch(place.name_en, params.keyword) ||
+              keywordMatch(place.intro_zh, params.keyword) ||
+              keywordMatch(place.intro_en, params.keyword)
+            );
+          }),
+          params.sort
         );
-        return paginate(places, params);
+
+        return paginate(places.map(toPlaceListItem), params);
+      },
+      listAdmin() {
+        return paginate(state.places, {});
       },
       detail(id: string) {
-        return state.places.find((place) => place._id === id) ?? null;
+        const place = state.places.find((item) => item._id === id);
+        if (!place || place.status !== "published") {
+          return null;
+        }
+
+        return toPlaceDetail(place);
       },
       mapMarkers() {
         return state.places
@@ -313,6 +437,7 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
             name_zh: place.name_zh,
             name_en: place.name_en,
             category_level_1: place.category_level_1,
+            is_recommended: place.is_recommended,
             location: place.location
           }));
       },
@@ -322,8 +447,11 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
           community_id: "tongzilin",
           name_zh: input.name_zh ?? "",
           name_en: input.name_en ?? "",
+          cover_file_id: input.cover_file_id ?? null,
+          cover_url: input.cover_url ?? null,
           category_level_1: input.category_level_1 ?? "",
           category_level_2: input.category_level_2 ?? "",
+          tag_ids: input.tag_ids ?? [],
           address_zh: input.address_zh ?? "",
           address_en: input.address_en ?? "",
           location: input.location ?? { latitude: 30.615, longitude: 104.062 },
@@ -332,9 +460,16 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
           business_hours_en: input.business_hours_en ?? "",
           intro_zh: input.intro_zh ?? "",
           intro_en: input.intro_en ?? "",
+          recommended_reason_zh: input.recommended_reason_zh ?? null,
+          recommended_reason_en: input.recommended_reason_en ?? null,
+          is_recommended: input.is_recommended ?? false,
+          recommended_rank: input.recommended_rank ?? 0,
           gallery_file_ids: input.gallery_file_ids ?? [],
           gallery_urls: input.gallery_urls ?? [],
-          status: "draft"
+          supports_navigation: input.supports_navigation ?? true,
+          supports_favorite: input.supports_favorite ?? true,
+          supports_share: input.supports_share ?? true,
+          status: input.status ?? "draft"
         };
 
         state.places.unshift(place);

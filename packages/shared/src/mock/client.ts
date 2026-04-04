@@ -8,6 +8,8 @@ import type {
   FileAsset,
   Notification,
   Place,
+  PlaceDetail,
+  PlaceListItem,
   PlaceMapMarker,
   Post
 } from "../types/entities";
@@ -78,8 +80,12 @@ export interface CommunityMapApiClient {
       pageSize?: number;
       communityId?: string;
       keyword?: string;
-    }): Promise<ApiResult<PageResult<Place>>>;
-    detail(id: string): Promise<ApiResult<Place>>;
+      category?: string;
+      tags?: string[];
+      recommended?: boolean;
+      sort?: "recommended" | "name";
+    }): Promise<ApiResult<PageResult<PlaceListItem>>>;
+    detail(id: string): Promise<ApiResult<PlaceDetail>>;
     mapMarkers(): Promise<ApiResult<PlaceMapMarker[]>>;
   };
   announcements: {
@@ -112,6 +118,7 @@ export interface CommunityMapApiClient {
     }): Promise<ApiResult<{ temp_url: string; expires_at: string }>>;
   };
   admin: {
+    listPlaces(): Promise<ApiResult<PageResult<Place>>>;
     createEvent(input: Partial<Event>): Promise<ApiResult<Event>>;
     updateEvent(id: string, input: Partial<Event>): Promise<ApiResult<Event>>;
     reviewEvent(
@@ -193,7 +200,7 @@ export const createMockClient = (
         return ok(service.places.list(query));
       },
       async detail(id) {
-        return ok(service.places.detail(id) as Place);
+        return ok(service.places.detail(id) as PlaceDetail);
       },
       async mapMarkers() {
         return ok(service.places.mapMarkers());
@@ -227,6 +234,9 @@ export const createMockClient = (
       }
     },
     admin: {
+      async listPlaces() {
+        return ok(service.places.listAdmin());
+      },
       async createEvent(input) {
         return ok(service.events.create(input, actorId));
       },
