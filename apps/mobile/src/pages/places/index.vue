@@ -4,66 +4,73 @@ import { onLoad } from "@dcloudio/uni-app";
 import type { PlaceListItem } from "@community-map/shared";
 
 import { mobileApi } from "@/api/client";
+import AsyncStateCard from "@/components/AsyncStateCard.vue";
 import SectionPanel from "@/components/SectionPanel.vue";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
+import { getPlacesCopy } from "./copy";
+import { placesPagePaths } from "./navigation";
+import { usePlaceAsyncState } from "./usePlaceAsyncState";
 
 const { state } = useAppStore();
 const places = ref<PlaceListItem[]>([]);
-const loading = ref(false);
-const error = ref("");
+const { loading, error, run } = usePlaceAsyncState();
 const filters = ref({
   keyword: "",
   category: "",
+  recommended: false,
   tags: "",
   sort: "recommended" as "recommended" | "name"
 });
 
+const listCopy = computed(() => getPlacesCopy(state.locale, "list"));
 const categories = computed(() =>
   Array.from(new Set(places.value.map((place) => place.category_level_1)))
 );
 const categoryOptions = computed(() => ["", ...categories.value]);
 
 const load = async () => {
-  loading.value = true;
-  error.value = "";
+  const result = await run(
+    async () =>
+      mobileApi.places.list({
+        communityId: state.communityId,
+        keyword: filters.value.keyword || undefined,
+        category: filters.value.category || undefined,
+        tags: filters.value.tags
+          ? filters.value.tags
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean)
+          : undefined,
+        recommended: filters.value.recommended || undefined,
+        sort: filters.value.sort
+      }),
+    listCopy.value.error
+  );
 
-  try {
-    const result = await mobileApi.places.list({
-      communityId: state.communityId,
-      keyword: filters.value.keyword || undefined,
-      category: filters.value.category || undefined,
-      tags: filters.value.tags
-        ? filters.value.tags
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-        : undefined,
-      sort: filters.value.sort
-    });
-    places.value = result.data.items;
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : "列表加载失败";
-  } finally {
-    loading.value = false;
+  if (!result) {
+    places.value = [];
+    return;
   }
+
+  places.value = result.data.items;
 };
 
 const openDetail = (id: string) => {
   uni.navigateTo({
-    url: `/pages/places/detail?id=${id}`
+    url: placesPagePaths.detail(id)
   });
 };
 
 const openMap = () => {
   uni.navigateTo({
-    url: "/pages/places/map"
+    url: placesPagePaths.map()
   });
 };
 
 const openRecommended = () => {
-  uni.navigateTo({
-    url: "/pages/places/recommended"
-  });
+  filters.value.recommended = true;
+  filters.value.sort = "recommended";
+  load();
 };
 
 const handleCategoryChange = (event: { detail: { value: number | string } }) => {
@@ -76,6 +83,7 @@ const resetFilters = () => {
   filters.value = {
     keyword: "",
     category: "",
+    recommended: false,
     tags: "",
     sort: "recommended"
   };
@@ -85,6 +93,7 @@ const resetFilters = () => {
 onLoad((query) => {
   filters.value.keyword = String(query?.keyword ?? "");
   filters.value.category = String(query?.category ?? "");
+  filters.value.recommended = query?.recommended === "true";
   filters.value.tags = String(query?.tags ?? "");
   filters.value.sort =
     query?.sort === "name" ? "name" : "recommended";
@@ -95,15 +104,17 @@ onLoad((query) => {
 
 <template>
   <view class="page">
-    <SectionPanel title="Places List" subtitle="列表页承担模块内完整筛选与推荐分流">
+    <SectionPanel :title="listCopy.title" :subtitle="listCopy.subtitle">
       <view class="toolbar">
-        <button class="secondary" @click="openMap">返回地图主页</button>
-        <button class="secondary" @click="openRecommended">推荐地点</button>
+        <button class="secondary" @click="openMap">{{ listCopy.backToMap }}</button>
+        <button class="secondary" @click="openRecommended">
+          {{ listCopy.recommendedFilter }}
+        </button>
       </view>
       <input
         v-model="filters.keyword"
         class="field"
-        placeholder="搜索地点名称或简介"
+        :placeholder="listCopy.searchPlaceholder"
         @confirm="load"
       />
       <picker
@@ -112,13 +123,13 @@ onLoad((query) => {
         @change="handleCategoryChange"
       >
         <view class="picker">
-          分类：{{ filters.category || "全部" }}
+          {{ listCopy.categoryLabel }}：{{ filters.category || listCopy.allCategories }}
         </view>
       </picker>
       <input
         v-model="filters.tags"
         class="field"
-        placeholder="按标签筛选，多个标签用逗号分隔"
+        :placeholder="listCopy.tagsPlaceholder"
         @confirm="load"
       />
       <view class="sort-row">
@@ -127,23 +138,32 @@ onLoad((query) => {
           :class="{ active: filters.sort === 'recommended' }"
           @click="filters.sort = 'recommended'; load()"
         >
-          推荐优先
+          {{ listCopy.recommendedSort }}
         </button>
         <button
           class="chip"
           :class="{ active: filters.sort === 'name' }"
           @click="filters.sort = 'name'; load()"
         >
-          名称排序
+          {{ listCopy.nameSort }}
         </button>
-        <button class="chip ghost" @click="resetFilters">清空筛选</button>
+        <button
+          class="chip"
+          :class="{ active: filters.recommended }"
+          @click="filters.recommended = !filters.recommended; load()"
+        >
+          {{ listCopy.recommendedFilter }}
+        </button>
+        <button class="chip ghost" @click="resetFilters">{{ listCopy.clearFilters }}</button>
       </view>
 
-      <view v-if="loading" class="status-card">地点列表加载中...</view>
-      <view v-else-if="error" class="status-card error">{{ error }}</view>
-      <view v-else-if="places.length === 0" class="status-card">
-        当前筛选条件下暂无地点。
-      </view>
+      <AsyncStateCard v-if="loading" variant="loading" :text="listCopy.loading" />
+      <AsyncStateCard v-else-if="error" variant="error" :text="error" />
+      <AsyncStateCard
+        v-else-if="places.length === 0"
+        variant="empty"
+        :text="listCopy.empty"
+      />
       <view
         v-else
         v-for="place in places"
@@ -155,7 +175,9 @@ onLoad((query) => {
           <view class="card-title">{{
             pickLocalized(state.locale, place.name_zh, place.name_en)
           }}</view>
-          <view v-if="place.is_recommended" class="badge">推荐</view>
+          <view v-if="place.is_recommended" class="badge">
+            {{ listCopy.recommendedFilter }}
+          </view>
         </view>
         <view class="card-meta">
           {{ place.category_level_1 }} / {{ place.category_level_2 }}
@@ -215,19 +237,6 @@ onLoad((query) => {
   font-size: 26rpx;
 }
 
-.status-card {
-  margin-top: 12rpx;
-  padding: 28rpx 24rpx;
-  border-radius: 20rpx;
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.status-card.error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
 .card {
   margin-top: 16rpx;
   background: #ffffff;
@@ -259,15 +268,23 @@ onLoad((query) => {
   align-items: center;
   padding: 6rpx 14rpx;
   border-radius: 999rpx;
+  font-size: 22rpx;
+}
+
+.badge {
   background: #dcfce7;
   color: #166534;
-  font-size: 22rpx;
 }
 
 .tags {
   display: flex;
-  flex-wrap: wrap;
   gap: 10rpx;
+  flex-wrap: wrap;
   margin-top: 14rpx;
+}
+
+.tag {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 </style>

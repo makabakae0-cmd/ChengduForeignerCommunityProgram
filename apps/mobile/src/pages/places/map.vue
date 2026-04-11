@@ -4,7 +4,11 @@ import type { PlaceMapMarker } from "@community-map/shared";
 import { onLoad } from "@dcloudio/uni-app";
 
 import { mobileApi } from "@/api/client";
+import AsyncStateCard from "@/components/AsyncStateCard.vue";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
+import { getPlacesCopy } from "./copy";
+import { placesPagePaths } from "./navigation";
+import { usePlaceAsyncState } from "./usePlaceAsyncState";
 
 interface RenderedMarker {
   id: number;
@@ -33,10 +37,11 @@ const MARKER_ICON_PATH = "/static/place-marker.svg";
 
 const { state } = useAppStore();
 const places = ref<PlaceMapMarker[]>([]);
-const loading = ref(true);
+const { loading, error, run } = usePlaceAsyncState();
 const selectedPlaceId = ref<string | null>(null);
 const presetPlaceId = ref<string | null>(null);
 
+const mapCopy = computed(() => getPlacesCopy(state.locale, "map"));
 const selectedPlace = computed(
   () =>
     places.value.find((place) => place._id === selectedPlaceId.value) ??
@@ -74,17 +79,19 @@ const renderedMarkers = computed<RenderedMarker[]>(() =>
 );
 
 const loadMarkers = async () => {
-  loading.value = true;
-  try {
-    const result = await mobileApi.places.mapMarkers();
-    places.value = result.data;
-    selectedPlaceId.value =
-      result.data.find((place) => place._id === presetPlaceId.value)?._id ??
-      result.data[0]?._id ??
-      null;
-  } finally {
-    loading.value = false;
+  const result = await run(() => mobileApi.places.mapMarkers(), mapCopy.value.error);
+
+  if (!result) {
+    places.value = [];
+    selectedPlaceId.value = null;
+    return;
   }
+
+  places.value = result.data;
+  selectedPlaceId.value =
+    result.data.find((place) => place._id === presetPlaceId.value)?._id ??
+    result.data[0]?._id ??
+    null;
 };
 
 const handleMarkerTap = (event: { detail?: { markerId?: number } }) => {
@@ -105,13 +112,13 @@ const openDetail = () => {
   }
 
   uni.navigateTo({
-    url: `/pages/places/detail?id=${selectedPlace.value._id}`
+    url: placesPagePaths.detail(selectedPlace.value._id)
   });
 };
 
 const openList = (recommended = false) => {
   uni.navigateTo({
-    url: recommended ? "/pages/places/recommended" : "/pages/places/index"
+    url: recommended ? placesPagePaths.recommended() : placesPagePaths.list()
   });
 };
 
@@ -124,13 +131,11 @@ onLoad((query) => {
 
 <template>
   <view class="page">
-    <view class="title">社区地点地图</view>
-    <view class="subtitle">
-      `Places` 模块主入口：先在地图上浏览，再进入列表、推荐或详情。
-    </view>
+    <view class="title">{{ mapCopy.title }}</view>
+    <view class="subtitle">{{ mapCopy.subtitle }}</view>
     <view class="action-row">
-      <button class="secondary" @click="openList(false)">查看完整列表</button>
-      <button class="secondary" @click="openList(true)">推荐地点</button>
+      <button class="secondary" @click="openList(false)">{{ mapCopy.openList }}</button>
+      <button class="secondary" @click="openList(true)">{{ mapCopy.openRecommended }}</button>
     </view>
 
     <map
@@ -143,7 +148,8 @@ onLoad((query) => {
       @markertap="handleMarkerTap"
     />
 
-    <view v-if="loading" class="empty">地图点位加载中...</view>
+    <AsyncStateCard v-if="loading" variant="loading" :text="mapCopy.loading" />
+    <AsyncStateCard v-else-if="error" variant="error" :text="error" />
     <view v-else-if="selectedPlace" class="detail-card">
       <view class="detail-title">
         {{
@@ -155,14 +161,16 @@ onLoad((query) => {
         }}
       </view>
       <view class="detail-meta">{{ selectedPlace.category_level_1 }}</view>
-      <view v-if="selectedPlace.is_recommended" class="pill">推荐地点</view>
+      <view v-if="selectedPlace.is_recommended" class="pill">
+        {{ mapCopy.recommendedBadge }}
+      </view>
       <view class="detail-meta">
         {{ selectedPlace.location.latitude }},
         {{ selectedPlace.location.longitude }}
       </view>
-      <button class="primary" @click="openDetail">查看地点详情</button>
+      <button class="primary" @click="openDetail">{{ mapCopy.openDetail }}</button>
     </view>
-    <view v-else class="empty">暂无已发布地点可显示。</view>
+    <AsyncStateCard v-else variant="empty" :text="mapCopy.empty" />
   </view>
 </template>
 
@@ -237,14 +245,5 @@ onLoad((query) => {
   margin-top: 24rpx;
   background: #0f766e;
   color: #ffffff;
-}
-
-.empty {
-  margin-top: 24rpx;
-  padding: 32rpx 24rpx;
-  background: #ffffff;
-  border-radius: 24rpx;
-  color: #64748b;
-  text-align: center;
 }
 </style>

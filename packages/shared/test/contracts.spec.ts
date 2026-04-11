@@ -8,6 +8,7 @@ import {
   PageResultSchema,
   PlaceDetailSchema,
   PlaceListItemSchema,
+  PlaceListQuerySchema,
   PlaceMapMarkerSchema,
   PlaceSchema,
   PostSchema,
@@ -125,6 +126,26 @@ describe("shared contracts", () => {
     });
 
     expect(marker.category_level_1).toBe("public-service");
+  });
+
+  it("normalizes the places list query contract", () => {
+    const query = PlaceListQuerySchema.parse({
+      page: "2",
+      pageSize: "12",
+      communityId: "tongzilin",
+      keyword: "coffee",
+      category: "cafe",
+      tags: "wifi,,english",
+      recommended: "true",
+      sort: "recommended"
+    });
+
+    expect(query.page).toBe(2);
+    expect(query.pageSize).toBe(12);
+    expect(query.communityId).toBe("tongzilin");
+    expect(query.tags).toEqual(["wifi", "english"]);
+    expect(query.recommended).toBe(true);
+    expect(query.sort).toBe("recommended");
   });
 
   it("rejects invalid locale fields", () => {

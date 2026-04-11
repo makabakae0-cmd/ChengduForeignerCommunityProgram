@@ -21,6 +21,7 @@ import {
 import { apiError, ApiAppError } from "./lib/errors";
 import { parseOrThrow } from "./lib/http";
 import { createProvider } from "./providers";
+import type { ApiProvider } from "./providers/types";
 
 type HttpMethod = "GET" | "POST" | "PATCH";
 type CloudbaseEventHandler = (
@@ -48,8 +49,6 @@ interface RouteMatch {
   params: Record<string, string>;
 }
 
-const provider = createProvider(process.env.API_PROVIDER);
-
 const matchRoute = (pattern: string, pathname: string): RouteMatch => {
   const patternSegments = pattern.split("/").filter(Boolean);
   const pathSegments = pathname.split("/").filter(Boolean);
@@ -59,13 +58,16 @@ const matchRoute = (pattern: string, pathname: string): RouteMatch => {
   }
 
   const params: Record<string, string> = {};
+
   for (let index = 0; index < patternSegments.length; index += 1) {
     const patternSegment = patternSegments[index];
     const pathSegment = pathSegments[index];
+
     if (patternSegment.startsWith(":")) {
       params[patternSegment.slice(1)] = pathSegment;
       continue;
     }
+
     if (patternSegment !== pathSegment) {
       return { matched: false, params: {} };
     }
@@ -76,13 +78,19 @@ const matchRoute = (pattern: string, pathname: string): RouteMatch => {
 
 const getActorId = (context: CloudbaseContextLike) => {
   const headerValue = context.httpContext.headers?.["x-mock-user-id"];
+
   if (Array.isArray(headerValue)) {
     return headerValue[0];
   }
+
   return headerValue;
 };
 
-const ok = (body: unknown, requestId: string, statusCode = 200): IntegrationResponse => ({
+const ok = (
+  body: unknown,
+  requestId: string,
+  statusCode = 200
+): IntegrationResponse => ({
   statusCode,
   headers: {
     "content-type": "application/json"
@@ -111,13 +119,16 @@ const fail = (error: ApiAppError, requestId: string): IntegrationResponse => ({
 });
 
 const requireRole = async (
+  provider: ApiProvider,
   context: CloudbaseContextLike,
   roles: Array<"community_admin" | "system_admin">
 ) => {
   const actor = await provider.auth.resolveActor(getActorId(context));
+
   if (!roles.some((role) => actor.role_flags.includes(role))) {
     throw apiError("FORBIDDEN", "Insufficient permission.", 403);
   }
+
   return actor;
 };
 
@@ -131,6 +142,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
     eventID: requestId,
     httpContext
   });
+  const provider = createProvider(process.env.API_PROVIDER);
 
   try {
     if (method === "GET" && pathname === "/health") {
@@ -156,17 +168,21 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const match = matchRoute("/events/:id", pathname);
+
       if (method === "GET" && match.matched) {
         const eventItem = await provider.events.detail(match.params.id);
+
         if (!eventItem) {
           throw apiError("NOT_FOUND", "Event not found.", 404);
         }
+
         return ok(eventItem, requestId);
       }
     }
 
     {
       const match = matchRoute("/events/:id/registrations", pathname);
+
       if (method === "POST" && match.matched) {
         const input = parseOrThrow(CreateEventRegistrationInputSchema, event);
         return ok(
@@ -183,11 +199,14 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const match = matchRoute("/events/registrations/:id/ticket", pathname);
+
       if (method === "GET" && match.matched) {
         const ticket = await provider.events.getTicketByRegistration(match.params.id);
+
         if (!ticket) {
           throw apiError("NOT_FOUND", "Ticket not found.", 404);
         }
+
         return ok(ticket, requestId);
       }
     }
@@ -202,11 +221,14 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const match = matchRoute("/discover/posts/:id", pathname);
+
       if (method === "GET" && match.matched) {
         const post = await provider.posts.detail(match.params.id);
+
         if (!post) {
           throw apiError("NOT_FOUND", "Post not found.", 404);
         }
+
         return ok(post, requestId);
       }
     }
@@ -218,6 +240,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const commentMatch = matchRoute("/discover/posts/:id/comments", pathname);
+
       if (method === "POST" && commentMatch.matched) {
         const input = parseOrThrow(CreateCommentInputSchema, event);
         return ok(
@@ -242,11 +265,14 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const match = matchRoute("/places/:id", pathname);
+
       if (method === "GET" && match.matched) {
         const place = await provider.places.detail(match.params.id);
+
         if (!place) {
           throw apiError("NOT_FOUND", "Place not found.", 404);
         }
+
         return ok(place, requestId);
       }
     }
@@ -261,11 +287,14 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const match = matchRoute("/announcements/:id", pathname);
+
       if (method === "GET" && match.matched) {
         const announcement = await provider.announcements.detail(match.params.id);
+
         if (!announcement) {
           throw apiError("NOT_FOUND", "Announcement not found.", 404);
         }
+
         return ok(announcement, requestId);
       }
     }
@@ -276,11 +305,17 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const match = matchRoute("/notifications/:id/read", pathname);
+
       if (method === "POST" && match.matched) {
-        const item = await provider.notifications.markRead(match.params.id, actorId);
+        const item = await provider.notifications.markRead(
+          match.params.id,
+          actorId
+        );
+
         if (!item) {
           throw apiError("NOT_FOUND", "Notification not found.", 404);
         }
+
         return ok(item, requestId);
       }
     }
@@ -301,7 +336,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
     }
 
     if (method === "POST" && pathname === "/admin/events") {
-      const actor = await requireRole({ eventID: requestId, httpContext }, [
+      const actor = await requireRole(provider, { eventID: requestId, httpContext }, [
         "community_admin",
         "system_admin"
       ]);
@@ -311,54 +346,66 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const match = matchRoute("/admin/events/:id", pathname);
+
       if (method === "PATCH" && match.matched) {
-        await requireRole({ eventID: requestId, httpContext }, [
+        await requireRole(provider, { eventID: requestId, httpContext }, [
           "community_admin",
           "system_admin"
         ]);
         const input = parseOrThrow(UpdateEventInputSchema, event);
         const item = await provider.events.update(match.params.id, input);
+
         if (!item) {
           throw apiError("NOT_FOUND", "Event not found.", 404);
         }
+
         return ok(item, requestId);
       }
     }
 
     {
       const match = matchRoute("/admin/events/:id/review", pathname);
+
       if (method === "POST" && match.matched) {
-        await requireRole({ eventID: requestId, httpContext }, [
+        await requireRole(provider, { eventID: requestId, httpContext }, [
           "community_admin",
           "system_admin"
         ]);
         const input = parseOrThrow(ReviewEventInputSchema, event);
         const item = await provider.events.review(match.params.id, input);
+
         if (!item) {
           throw apiError("NOT_FOUND", "Event not found.", 404);
         }
+
         return ok(item, requestId);
       }
     }
 
     {
       const match = matchRoute("/admin/events/:id/checkin", pathname);
+
       if (method === "POST" && match.matched) {
-        await requireRole({ eventID: requestId, httpContext }, [
+        await requireRole(provider, { eventID: requestId, httpContext }, [
           "community_admin",
           "system_admin"
         ]);
         const input = parseOrThrow(CheckinInputSchema, event);
-        const ticket = await provider.events.checkin(match.params.id, input.ticket_id);
+        const ticket = await provider.events.checkin(
+          match.params.id,
+          input.ticket_id
+        );
+
         if (!ticket) {
           throw apiError("NOT_FOUND", "Ticket not found.", 404);
         }
+
         return ok(ticket, requestId);
       }
     }
 
     if (method === "POST" && pathname === "/admin/places") {
-      await requireRole({ eventID: requestId, httpContext }, [
+      await requireRole(provider, { eventID: requestId, httpContext }, [
         "community_admin",
         "system_admin"
       ]);
@@ -367,7 +414,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
     }
 
     if (method === "GET" && pathname === "/admin/places") {
-      await requireRole({ eventID: requestId, httpContext }, [
+      await requireRole(provider, { eventID: requestId, httpContext }, [
         "community_admin",
         "system_admin"
       ]);
@@ -376,16 +423,19 @@ export const main: CloudbaseEventHandler = async (event, context) => {
 
     {
       const match = matchRoute("/admin/places/:id", pathname);
+
       if (method === "PATCH" && match.matched) {
-        await requireRole({ eventID: requestId, httpContext }, [
+        await requireRole(provider, { eventID: requestId, httpContext }, [
           "community_admin",
           "system_admin"
         ]);
         const input = parseOrThrow(UpdatePlaceInputSchema, event);
         const item = await provider.places.update(match.params.id, input);
+
         if (!item) {
           throw apiError("NOT_FOUND", "Place not found.", 404);
         }
+
         return ok(item, requestId);
       }
     }

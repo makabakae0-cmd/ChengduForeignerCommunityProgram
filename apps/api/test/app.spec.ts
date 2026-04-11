@@ -225,4 +225,52 @@ describe("api routes", () => {
       await close();
     }
   });
+
+  it("supports the places v1 query baseline", async () => {
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const filteredResponse = await fetch(
+        `${baseUrl}/places?communityId=tongzilin&category=public-service&tags=service&recommended=true&sort=recommended`
+      );
+      const filteredData = await filteredResponse.json();
+
+      expect(filteredResponse.status).toBe(200);
+      expect(filteredData.data.page).toBe(1);
+      expect(filteredData.data.items.length).toBeGreaterThan(0);
+      expect(
+        filteredData.data.items.every(
+          (item: {
+            category_level_1: string;
+            tag_ids: string[];
+            is_recommended: boolean;
+          }) =>
+            item.category_level_1 === "public-service" &&
+            item.tag_ids.includes("service") &&
+            item.is_recommended
+        )
+      ).toBe(true);
+
+      const emptyResponse = await fetch(
+        `${baseUrl}/places?communityId=other-community&page=1&pageSize=5`
+      );
+      const emptyData = await emptyResponse.json();
+
+      expect(emptyResponse.status).toBe(200);
+      expect(emptyData.data.items).toEqual([]);
+      expect(emptyData.data.page).toBe(1);
+      expect(emptyData.data.pageSize).toBe(5);
+      expect(emptyData.data.total).toBe(0);
+
+      const markerResponse = await fetch(`${baseUrl}/places/map-markers`);
+      const markerData = await markerResponse.json();
+
+      expect(markerResponse.status).toBe(200);
+      expect(markerData.data[0]).toHaveProperty("location");
+      expect(markerData.data[0]).not.toHaveProperty("gallery_urls");
+      expect(markerData.data[0]).not.toHaveProperty("navigation");
+    } finally {
+      await close();
+    }
+  });
 });

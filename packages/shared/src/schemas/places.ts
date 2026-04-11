@@ -89,7 +89,11 @@ export const PlaceListQuerySchema = PageQuerySchema.extend({
         return undefined;
       }
 
-      return Array.isArray(value) ? value : value.split(",").map((item) => item.trim());
+      const tags = Array.isArray(value)
+        ? value
+        : value.split(",").map((item) => item.trim());
+
+      return tags.filter(Boolean);
     }),
   recommended: z.coerce.boolean().optional(),
   sort: PlaceListSortSchema.default("recommended")

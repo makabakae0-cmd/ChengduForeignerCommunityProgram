@@ -1,31 +1,34 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import type { PlaceDetail } from "@community-map/shared";
 
 import { mobileApi } from "@/api/client";
+import AsyncStateCard from "@/components/AsyncStateCard.vue";
 import SectionPanel from "@/components/SectionPanel.vue";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
+import { getPlacesCopy } from "./copy";
+import { placesPagePaths } from "./navigation";
+import { usePlaceAsyncState } from "./usePlaceAsyncState";
 
 const { state } = useAppStore();
 const place = ref<PlaceDetail | null>(null);
-const loading = ref(true);
-const error = ref("");
+const { loading, error, run, setError } = usePlaceAsyncState();
+const detailCopy = computed(() => getPlacesCopy(state.locale, "detail"));
 
 onLoad(async (query) => {
   if (!query?.id) {
-    loading.value = false;
-    error.value = "缺少地点 ID";
+    setError(detailCopy.value.missingId);
     return;
   }
 
-  try {
-    const result = await mobileApi.places.detail(String(query.id));
+  const result = await run(
+    () => mobileApi.places.detail(String(query.id)),
+    detailCopy.value.error
+  );
+
+  if (result) {
     place.value = result.data;
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : "详情加载失败";
-  } finally {
-    loading.value = false;
   }
 });
 
@@ -37,7 +40,11 @@ const openNavigation = () => {
   uni.openLocation({
     latitude: place.value.navigation.latitude,
     longitude: place.value.navigation.longitude,
-    name: pickLocalized(state.locale, place.value.navigation.name_zh, place.value.navigation.name_en),
+    name: pickLocalized(
+      state.locale,
+      place.value.navigation.name_zh,
+      place.value.navigation.name_en
+    ),
     address: pickLocalized(
       state.locale,
       place.value.navigation.address_zh,
@@ -46,7 +53,7 @@ const openNavigation = () => {
     scale: 16,
     fail: () => {
       uni.showToast({
-        title: "打开导航失败",
+        title: detailCopy.value.navigationFailed,
         icon: "none"
       });
     }
@@ -59,13 +66,13 @@ const openMapPosition = () => {
   }
 
   uni.navigateTo({
-    url: `/pages/places/map?id=${place.value._id}`
+    url: placesPagePaths.map(place.value._id)
   });
 };
 
 const favoritePlaceholder = () => {
   uni.showToast({
-    title: "收藏能力将在后续版本接入",
+    title: detailCopy.value.favoritePending,
     icon: "none"
   });
 };
@@ -76,7 +83,7 @@ const sharePlaceholder = () => {
   });
 
   uni.showToast({
-    title: "分享入口已预留",
+    title: detailCopy.value.sharePending,
     icon: "none"
   });
 };
@@ -84,8 +91,8 @@ const sharePlaceholder = () => {
 
 <template>
   <view class="page">
-    <view v-if="loading" class="status-card">详情加载中...</view>
-    <view v-else-if="error" class="status-card error">{{ error }}</view>
+    <AsyncStateCard v-if="loading" variant="loading" :text="detailCopy.loading" />
+    <AsyncStateCard v-else-if="error" variant="error" :text="error" />
     <SectionPanel
       v-else-if="place"
       :title="pickLocalized(state.locale, place.name_zh, place.name_en)"
@@ -99,22 +106,19 @@ const sharePlaceholder = () => {
         {{ pickLocalized(state.locale, place.address_zh, place.address_en) }}
       </view>
       <view class="line">
-        营业时间：{{
+        {{ detailCopy.businessHours }}：{{
           pickLocalized(state.locale, place.business_hours_zh, place.business_hours_en)
         }}
       </view>
       <view class="line">{{
         pickLocalized(state.locale, place.intro_zh, place.intro_en)
       }}</view>
-      <view
-        v-if="place.is_recommended"
-        class="recommendation"
-      >
+      <view v-if="place.is_recommended" class="recommendation">
         {{
           pickLocalized(
             state.locale,
-            place.recommended_reason_zh ?? "推荐地点",
-            place.recommended_reason_en ?? "Recommended place"
+            place.recommended_reason_zh ?? detailCopy.recommendedFallback,
+            place.recommended_reason_en ?? detailCopy.recommendedFallback
           )
         }}
       </view>
@@ -128,14 +132,17 @@ const sharePlaceholder = () => {
         </view>
       </view>
       <view class="button-row">
-        <button class="primary" @click="openNavigation">发起导航</button>
-        <button class="secondary" @click="openMapPosition">查看地图位置</button>
+        <button class="primary" @click="openNavigation">{{ detailCopy.openNavigation }}</button>
+        <button class="secondary" @click="openMapPosition">
+          {{ detailCopy.openMapPosition }}
+        </button>
       </view>
       <view class="button-row">
-        <button class="ghost" @click="favoritePlaceholder">收藏入口</button>
-        <button class="ghost" @click="sharePlaceholder">分享入口</button>
+        <button class="ghost" @click="favoritePlaceholder">{{ detailCopy.favoriteEntry }}</button>
+        <button class="ghost" @click="sharePlaceholder">{{ detailCopy.shareEntry }}</button>
       </view>
     </SectionPanel>
+    <AsyncStateCard v-else variant="empty" :text="detailCopy.empty" />
   </view>
 </template>
 
@@ -144,18 +151,6 @@ const sharePlaceholder = () => {
   padding: 24rpx;
   background: #f8fafc;
   min-height: 100vh;
-}
-
-.status-card {
-  padding: 28rpx 24rpx;
-  border-radius: 24rpx;
-  background: #ffffff;
-  color: #475569;
-}
-
-.status-card.error {
-  background: #fee2e2;
-  color: #991b1b;
 }
 
 .hero-image,

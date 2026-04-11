@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from "vue";
 import { mobileApi } from "@/api/client";
 import SectionPanel from "@/components/SectionPanel.vue";
 import { appCopy } from "@/i18n/copy";
+import { placesPagePaths } from "@/pages/places/navigation";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
 
 const { state } = useAppStore();
@@ -59,7 +60,7 @@ onMounted(load);
         </button>
         <button
           class="action-button ghost"
-          @click="open('/pages/places/recommended')"
+          @click="open(placesPagePaths.recommended())"
         >
           查看推荐地点
         </button>
