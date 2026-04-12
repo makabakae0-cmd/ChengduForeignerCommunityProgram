@@ -135,7 +135,6 @@ describe("shared contracts", () => {
       communityId: "tongzilin",
       keyword: "coffee",
       category: "cafe",
-      tags: "wifi,,english",
       recommended: "true",
       sort: "recommended"
     });
@@ -143,9 +142,16 @@ describe("shared contracts", () => {
     expect(query.page).toBe(2);
     expect(query.pageSize).toBe(12);
     expect(query.communityId).toBe("tongzilin");
-    expect(query.tags).toEqual(["wifi", "english"]);
     expect(query.recommended).toBe(true);
     expect(query.sort).toBe("recommended");
+  });
+
+  it("rejects invalid places list sort values", () => {
+    expect(() =>
+      PlaceListQuerySchema.parse({
+        sort: "latest"
+      })
+    ).toThrow();
   });
 
   it("rejects invalid locale fields", () => {

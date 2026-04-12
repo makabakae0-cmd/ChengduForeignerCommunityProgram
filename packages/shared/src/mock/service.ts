@@ -22,7 +22,6 @@ interface PageParams {
   keyword?: string;
   communityId?: string;
   category?: string;
-  tags?: string[];
   recommended?: boolean;
   sort?: "recommended" | "name";
 }
@@ -388,13 +387,6 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
               params.category &&
               place.category_level_1 !== params.category &&
               place.category_level_2 !== params.category
-            ) {
-              return false;
-            }
-
-            if (
-              params.tags?.length &&
-              !params.tags.every((tag) => place.tag_ids.includes(tag))
             ) {
               return false;
             }

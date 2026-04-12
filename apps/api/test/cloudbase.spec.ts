@@ -89,8 +89,10 @@ describe("cloudbase event handler", () => {
 
     const query = {
       communityId: "tongzilin",
+      category: "public-service",
+      page: 1,
+      pageSize: 1,
       recommended: true,
-      tags: ["service"],
       sort: "recommended" as const
     };
 
@@ -104,6 +106,12 @@ describe("cloudbase event handler", () => {
 
     expect(cloudbaseList).toEqual(mockList);
     expect(cloudbaseMarkers).toEqual(mockMarkers);
+    expect(cloudbaseList.pageSize).toBe(1);
+    expect(
+      cloudbaseList.items.every(
+        (item) => item.category_level_1 === "public-service"
+      )
+    ).toBe(true);
 
     const mockDetail = await mockProvider.places.detail(mockList.items[0]._id);
     const cloudbaseDetail = await cloudbaseProvider.places.detail(

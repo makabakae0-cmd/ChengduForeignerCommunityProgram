@@ -3,20 +3,19 @@ export type PlacesLocale = "zh" | "en";
 const placesCopy = {
   zh: {
     list: {
-      title: "Places List",
-      subtitle: "基于冻结的 v1 contract 浏览地点列表、推荐位和筛选结果。",
+      title: "社区地点",
+      subtitle: "浏览社区地点卡片，按关键词、分类或推荐入口快速筛选。",
       loading: "地点列表加载中...",
       empty: "当前筛选条件下暂无地点。",
       error: "列表加载失败",
       searchPlaceholder: "搜索地点名称或简介",
-      tagsPlaceholder: "按标签筛选，多个标签用逗号分隔",
       allCategories: "全部",
-      backToMap: "返回地图主页",
-      recommendedFilter: "推荐地点",
+      recommendedFilter: "推荐入口",
       recommendedSort: "推荐优先",
       nameSort: "名称排序",
       clearFilters: "清空筛选",
-      categoryLabel: "分类"
+      categoryLabel: "分类",
+      recommendedBadge: "推荐"
     },
     map: {
       title: "社区地点地图",
@@ -47,21 +46,20 @@ const placesCopy = {
   },
   en: {
     list: {
-      title: "Places List",
+      title: "Community Places",
       subtitle:
-        "Browse the frozen v1 places contract with filters and recommendation slots.",
+        "Browse community places with keyword search, category switching, and recommendation entry points.",
       loading: "Loading places...",
       empty: "No places match the current filters.",
       error: "Failed to load places",
       searchPlaceholder: "Search place name or summary",
-      tagsPlaceholder: "Filter by tags, separated by commas",
       allCategories: "All",
-      backToMap: "Back to map",
-      recommendedFilter: "Recommended",
+      recommendedFilter: "Recommended entry",
       recommendedSort: "Recommended first",
       nameSort: "Sort by name",
       clearFilters: "Clear filters",
-      categoryLabel: "Category"
+      categoryLabel: "Category",
+      recommendedBadge: "Recommended"
     },
     map: {
       title: "Community Places Map",

@@ -186,14 +186,16 @@ describe("shared api clients", () => {
 
     await httpClient.places.list({
       category: "public-service",
-      tags: ["service", "community"],
+      page: 2,
+      pageSize: 5,
       recommended: true,
-      sort: "recommended"
+      sort: "recommended",
+      keyword: "community"
     });
 
     expect(requester).toHaveBeenCalledWith(
       "GET",
-      "http://localhost:8787/places?category=public-service&tags=service%2Ccommunity&recommended=true&sort=recommended",
+      "http://localhost:8787/places?category=public-service&page=2&pageSize=5&recommended=true&sort=recommended&keyword=community",
       undefined,
       { "x-mock-user-id": "user_001" }
     );

@@ -81,20 +81,6 @@ export const PlaceDetailSchema = z.object({
 
 export const PlaceListQuerySchema = PageQuerySchema.extend({
   category: z.string().trim().min(1).optional(),
-  tags: z
-    .union([z.array(z.string().trim().min(1)), z.string().trim().min(1)])
-    .optional()
-    .transform((value) => {
-      if (value === undefined) {
-        return undefined;
-      }
-
-      const tags = Array.isArray(value)
-        ? value
-        : value.split(",").map((item) => item.trim());
-
-      return tags.filter(Boolean);
-    }),
   recommended: z.coerce.boolean().optional(),
   sort: PlaceListSortSchema.default("recommended")
 });

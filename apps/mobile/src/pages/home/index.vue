@@ -53,10 +53,10 @@ onMounted(load);
       </view>
     </SectionPanel>
 
-    <SectionPanel title="Places" subtitle="地点模块与地图入口已预留">
+    <SectionPanel title="Places" subtitle="从首页直接进入完整地点列表或推荐地点。">
       <view class="places-actions">
-        <button class="action-button" @click="open('/pages/places/map')">
-          打开地图主页
+        <button class="action-button" @click="open(placesPagePaths.list())">
+          查看地点列表
         </button>
         <button
           class="action-button ghost"

@@ -8,6 +8,7 @@ import AsyncStateCard from "@/components/AsyncStateCard.vue";
 import SectionPanel from "@/components/SectionPanel.vue";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
 import { getPlacesCopy } from "./copy";
+import { PLACE_LIST_CATEGORIES } from "./list-categories";
 import { placesPagePaths } from "./navigation";
 import { usePlaceAsyncState } from "./usePlaceAsyncState";
 
@@ -18,15 +19,28 @@ const filters = ref({
   keyword: "",
   category: "",
   recommended: false,
-  tags: "",
   sort: "recommended" as "recommended" | "name"
 });
 
 const listCopy = computed(() => getPlacesCopy(state.locale, "list"));
-const categories = computed(() =>
-  Array.from(new Set(places.value.map((place) => place.category_level_1)))
+const categoryOptions = computed(() => [
+  {
+    value: "",
+    label: listCopy.value.allCategories
+  },
+  ...PLACE_LIST_CATEGORIES.map((option) => ({
+    value: option.value,
+    label: option.label[state.locale]
+  }))
+]);
+const activeCategoryIndex = computed(() =>
+  Math.max(
+    0,
+    categoryOptions.value.findIndex(
+      (option) => option.value === filters.value.category
+    )
+  )
 );
-const categoryOptions = computed(() => ["", ...categories.value]);
 
 const load = async () => {
   const result = await run(
@@ -35,12 +49,6 @@ const load = async () => {
         communityId: state.communityId,
         keyword: filters.value.keyword || undefined,
         category: filters.value.category || undefined,
-        tags: filters.value.tags
-          ? filters.value.tags
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean)
-          : undefined,
         recommended: filters.value.recommended || undefined,
         sort: filters.value.sort
       }),
@@ -61,12 +69,6 @@ const openDetail = (id: string) => {
   });
 };
 
-const openMap = () => {
-  uni.navigateTo({
-    url: placesPagePaths.map()
-  });
-};
-
 const openRecommended = () => {
   filters.value.recommended = true;
   filters.value.sort = "recommended";
@@ -75,7 +77,7 @@ const openRecommended = () => {
 
 const handleCategoryChange = (event: { detail: { value: number | string } }) => {
   filters.value.category =
-    categoryOptions.value[Number(event.detail.value)] ?? "";
+    categoryOptions.value[Number(event.detail.value)]?.value ?? "";
   load();
 };
 
@@ -84,7 +86,6 @@ const resetFilters = () => {
     keyword: "",
     category: "",
     recommended: false,
-    tags: "",
     sort: "recommended"
   };
   load();
@@ -94,9 +95,7 @@ onLoad((query) => {
   filters.value.keyword = String(query?.keyword ?? "");
   filters.value.category = String(query?.category ?? "");
   filters.value.recommended = query?.recommended === "true";
-  filters.value.tags = String(query?.tags ?? "");
-  filters.value.sort =
-    query?.sort === "name" ? "name" : "recommended";
+  filters.value.sort = query?.sort === "name" ? "name" : "recommended";
 
   load();
 });
@@ -106,7 +105,6 @@ onLoad((query) => {
   <view class="page">
     <SectionPanel :title="listCopy.title" :subtitle="listCopy.subtitle">
       <view class="toolbar">
-        <button class="secondary" @click="openMap">{{ listCopy.backToMap }}</button>
         <button class="secondary" @click="openRecommended">
           {{ listCopy.recommendedFilter }}
         </button>
@@ -118,20 +116,14 @@ onLoad((query) => {
         @confirm="load"
       />
       <picker
-        :range="categoryOptions"
-        :value="categoryOptions.indexOf(filters.category)"
+        :range="categoryOptions.map((option) => option.label)"
+        :value="activeCategoryIndex"
         @change="handleCategoryChange"
       >
         <view class="picker">
-          {{ listCopy.categoryLabel }}：{{ filters.category || listCopy.allCategories }}
+          {{ listCopy.categoryLabel }}：{{ categoryOptions[activeCategoryIndex]?.label }}
         </view>
       </picker>
-      <input
-        v-model="filters.tags"
-        class="field"
-        :placeholder="listCopy.tagsPlaceholder"
-        @confirm="load"
-      />
       <view class="sort-row">
         <button
           class="chip"
@@ -171,12 +163,18 @@ onLoad((query) => {
         class="card"
         @click="openDetail(place._id)"
       >
+        <image
+          v-if="place.cover_url"
+          class="card-cover"
+          :src="place.cover_url"
+          mode="aspectFill"
+        />
         <view class="card-top">
           <view class="card-title">{{
             pickLocalized(state.locale, place.name_zh, place.name_en)
           }}</view>
           <view v-if="place.is_recommended" class="badge">
-            {{ listCopy.recommendedFilter }}
+            {{ listCopy.recommendedBadge }}
           </view>
         </view>
         <view class="card-meta">
@@ -242,6 +240,14 @@ onLoad((query) => {
   background: #ffffff;
   border-radius: 22rpx;
   padding: 24rpx;
+  overflow: hidden;
+}
+
+.card-cover {
+  width: calc(100% + 48rpx);
+  height: 240rpx;
+  margin: -24rpx -24rpx 20rpx;
+  background: #e2e8f0;
 }
 
 .card-top {
@@ -260,6 +266,7 @@ onLoad((query) => {
 .card-text {
   margin-top: 10rpx;
   color: #6b7280;
+  line-height: 1.5;
 }
 
 .badge,

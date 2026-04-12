@@ -230,8 +230,15 @@ describe("api routes", () => {
     const { baseUrl, close } = await createTestBaseUrl();
 
     try {
+      const keywordResponse = await fetch(`${baseUrl}/places?keyword=cafe`);
+      const keywordData = await keywordResponse.json();
+
+      expect(keywordResponse.status).toBe(200);
+      expect(keywordData.data.items).toHaveLength(1);
+      expect(keywordData.data.items[0].name_en).toBe("Global Corner Cafe");
+
       const filteredResponse = await fetch(
-        `${baseUrl}/places?communityId=tongzilin&category=public-service&tags=service&recommended=true&sort=recommended`
+        `${baseUrl}/places?communityId=tongzilin&category=public-service&recommended=true&sort=recommended`
       );
       const filteredData = await filteredResponse.json();
 
@@ -242,14 +249,33 @@ describe("api routes", () => {
         filteredData.data.items.every(
           (item: {
             category_level_1: string;
-            tag_ids: string[];
             is_recommended: boolean;
           }) =>
-            item.category_level_1 === "public-service" &&
-            item.tag_ids.includes("service") &&
-            item.is_recommended
+            item.category_level_1 === "public-service" && item.is_recommended
         )
       ).toBe(true);
+
+      const nameSortResponse = await fetch(`${baseUrl}/places?sort=name`);
+      const nameSortData = await nameSortResponse.json();
+
+      expect(nameSortResponse.status).toBe(200);
+      expect(
+        nameSortData.data.items.map((item: { name_en: string }) => item.name_en)
+      ).toEqual(["Global Corner Cafe", "Tongzilin Community Center"]);
+
+      const pagedResponse = await fetch(
+        `${baseUrl}/places?page=2&pageSize=1&sort=name`
+      );
+      const pagedData = await pagedResponse.json();
+
+      expect(pagedResponse.status).toBe(200);
+      expect(pagedData.data.items).toHaveLength(1);
+      expect(pagedData.data.page).toBe(2);
+      expect(pagedData.data.pageSize).toBe(1);
+      expect(pagedData.data.total).toBe(2);
+      expect(pagedData.data.items[0].name_en).toBe(
+        "Tongzilin Community Center"
+      );
 
       const emptyResponse = await fetch(
         `${baseUrl}/places?communityId=other-community&page=1&pageSize=5`
@@ -269,6 +295,12 @@ describe("api routes", () => {
       expect(markerData.data[0]).toHaveProperty("location");
       expect(markerData.data[0]).not.toHaveProperty("gallery_urls");
       expect(markerData.data[0]).not.toHaveProperty("navigation");
+
+      const invalidSortResponse = await fetch(`${baseUrl}/places?sort=latest`);
+      const invalidSortData = await invalidSortResponse.json();
+
+      expect(invalidSortResponse.status).toBe(400);
+      expect(invalidSortData.error.code).toBe("VALIDATION_ERROR");
     } finally {
       await close();
     }
