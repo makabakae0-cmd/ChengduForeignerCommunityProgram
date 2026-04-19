@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import type { Place } from "@community-map/shared";
+import { ElMessage } from "element-plus";
+import {
+  CreatePlaceInputSchema,
+  PLACE_STATUSES,
+  PLACE_TOP_LEVEL_CATEGORIES,
+  UpdatePlaceInputSchema,
+  type Place
+} from "@community-map/shared";
 
 import { adminApi } from "@/api/client";
 
@@ -8,6 +15,17 @@ const loading = ref(false);
 const places = ref<Place[]>([]);
 const saving = ref(false);
 const editingId = ref<string | null>(null);
+const submittingError = ref("");
+
+const categoryOptions = PLACE_TOP_LEVEL_CATEGORIES.map((value) => ({
+  value,
+  label: value
+}));
+
+const statusOptions = PLACE_STATUSES.map((value) => ({
+  value,
+  label: value
+}));
 
 const createEmptyForm = () => ({
   name_zh: "新增地点草稿",
@@ -39,8 +57,14 @@ const createEmptyForm = () => ({
 
 const form = reactive(createEmptyForm());
 
+const issueMessage = (issue: { path: Array<string | number>; message: string }) =>
+  issue.path.length > 0
+    ? `${issue.path.join(".")}: ${issue.message}`
+    : issue.message;
+
 const fillForm = (place?: Place) => {
   Object.assign(form, createEmptyForm());
+  submittingError.value = "";
 
   if (!place) {
     editingId.value = null;
@@ -114,6 +138,22 @@ const buildPayload = () => ({
   status: form.status
 });
 
+const buildValidatedPayload = () => {
+  const payload = buildPayload();
+  const result = editingId.value
+    ? UpdatePlaceInputSchema.safeParse(payload)
+    : CreatePlaceInputSchema.safeParse(payload);
+
+  if (result.success) {
+    return result.data;
+  }
+
+  const message = issueMessage(result.error.issues[0]);
+  submittingError.value = message;
+  ElMessage.error(message);
+  return null;
+};
+
 const load = async () => {
   loading.value = true;
   try {
@@ -126,17 +166,25 @@ const load = async () => {
 
 const submit = async () => {
   saving.value = true;
-  const payload = buildPayload();
+  submittingError.value = "";
 
-  if (editingId.value) {
-    await adminApi.admin.updatePlace(editingId.value, payload);
-  } else {
-    await adminApi.admin.createPlace(payload);
+  try {
+    const payload = buildValidatedPayload();
+    if (!payload) {
+      return;
+    }
+
+    if (editingId.value) {
+      await adminApi.admin.updatePlace(editingId.value, payload);
+    } else {
+      await adminApi.admin.createPlace(payload);
+    }
+
+    fillForm();
+    await load();
+  } finally {
+    saving.value = false;
   }
-
-  saving.value = false;
-  fillForm();
-  await load();
 };
 
 const startCreate = () => fillForm();
@@ -164,16 +212,34 @@ onMounted(async () => {
         <div class="form-grid">
           <el-input v-model="form.name_zh" placeholder="中文名" />
           <el-input v-model="form.name_en" placeholder="英文名" />
-          <el-input v-model="form.category_level_1" placeholder="一级分类" />
+          <el-select v-model="form.category_level_1" placeholder="一级分类">
+            <el-option
+              v-for="option in categoryOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
           <el-input v-model="form.category_level_2" placeholder="二级分类" />
           <el-input v-model="form.tag_ids_text" placeholder="标签，逗号分隔" />
-          <el-input v-model="form.status" placeholder="状态" />
+          <el-select v-model="form.status" placeholder="状态">
+            <el-option
+              v-for="option in statusOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
           <el-input v-model="form.address_zh" placeholder="中文地址" />
           <el-input v-model="form.address_en" placeholder="英文地址" />
           <el-input v-model="form.cover_url" placeholder="封面 URL" />
           <el-input v-model="form.tencent_map_poi_id" placeholder="腾讯 POI ID" />
-          <el-input v-model.number="form.latitude" placeholder="纬度" />
-          <el-input v-model.number="form.longitude" placeholder="经度" />
+          <el-input-number v-model="form.latitude" :step="0.0001" placeholder="纬度" />
+          <el-input-number
+            v-model="form.longitude"
+            :step="0.0001"
+            placeholder="经度"
+          />
           <el-input v-model="form.business_hours_zh" placeholder="中文营业时间" />
           <el-input v-model="form.business_hours_en" placeholder="英文营业时间" />
           <el-input
@@ -184,8 +250,9 @@ onMounted(async () => {
             v-model="form.recommended_reason_en"
             placeholder="英文推荐理由"
           />
-          <el-input
-            v-model.number="form.recommended_rank"
+          <el-input-number
+            v-model="form.recommended_rank"
+            :min="0"
             placeholder="推荐排序"
           />
           <el-input
@@ -193,6 +260,7 @@ onMounted(async () => {
             placeholder="图集 URL，逗号分隔"
           />
         </div>
+        <div v-if="submittingError" class="error-text">{{ submittingError }}</div>
         <el-input
           v-model="form.intro_zh"
           type="textarea"
@@ -272,6 +340,11 @@ onMounted(async () => {
   gap: 16px;
   flex-wrap: wrap;
   margin-top: 16px;
+}
+
+.error-text {
+  margin-bottom: 12px;
+  color: #b91c1c;
 }
 
 .mt-12 {

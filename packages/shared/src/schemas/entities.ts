@@ -15,6 +15,7 @@ import {
   NotificationStatusSchema,
   RoleFlagSchema
 } from "./common";
+import { PlaceTopLevelCategorySchema } from "./place-categories";
 
 export const UserSchema = z.object({
   _id: z.string(),
@@ -83,7 +84,7 @@ export const PlaceSchema = z.object({
   name_en: z.string(),
   cover_file_id: z.string().nullable(),
   cover_url: z.string().url().nullable(),
-  category_level_1: z.string(),
+  category_level_1: PlaceTopLevelCategorySchema,
   category_level_2: z.string(),
   tag_ids: z.array(z.string()),
   address_zh: z.string(),

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { PLACE_STATUSES } from "../enums";
 import { PlaceSchema } from "./entities";
 import { CoordinatesSchema, PageQuerySchema } from "./common";
+import { PlaceTopLevelCategorySchema } from "./place-categories";
 
 export const PlaceListSortSchema = z.enum(["recommended", "name"]);
 
@@ -11,7 +12,7 @@ export const PlaceListItemSchema = z.object({
   name_zh: z.string(),
   name_en: z.string(),
   cover_url: z.string().url().nullable(),
-  category_level_1: z.string(),
+  category_level_1: PlaceTopLevelCategorySchema,
   category_level_2: z.string(),
   short_address_zh: z.string(),
   short_address_en: z.string(),
@@ -28,7 +29,7 @@ export const PlaceMapMarkerSchema = z.object({
   _id: z.string(),
   name_zh: z.string(),
   name_en: z.string(),
-  category_level_1: z.string(),
+  category_level_1: PlaceTopLevelCategorySchema,
   is_recommended: z.boolean(),
   location: z.object({
     latitude: z.number(),
@@ -58,7 +59,7 @@ export const PlaceDetailSchema = z.object({
   name_zh: z.string(),
   name_en: z.string(),
   cover_url: z.string().url().nullable(),
-  category_level_1: z.string(),
+  category_level_1: PlaceTopLevelCategorySchema,
   category_level_2: z.string(),
   tag_ids: z.array(z.string()),
   address_zh: z.string(),

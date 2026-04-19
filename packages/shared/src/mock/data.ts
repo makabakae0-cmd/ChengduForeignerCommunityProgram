@@ -143,7 +143,7 @@ export const createMockDataset = (): MockDataset => ({
       name_en: "Global Corner Cafe",
       cover_file_id: "cloud://place-cover-002",
       cover_url: "https://example.com/public/places/place_002/cover.jpg",
-      category_level_1: "food",
+      category_level_1: "food-drink",
       category_level_2: "cafe",
       tag_ids: ["coffee", "social", "english-friendly"],
       address_zh: "成都市武侯区桐梓林南路 26 号",

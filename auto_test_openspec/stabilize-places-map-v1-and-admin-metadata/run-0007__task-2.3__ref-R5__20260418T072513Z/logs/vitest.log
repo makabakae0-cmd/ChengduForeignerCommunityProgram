@@ -1,0 +1,11 @@
+
+ RUN  v3.2.4 /Users/jerry/A/communityMap/ChengduForeignerCommunityProgram
+
+ ✓ apps/api/test/cloudbase.spec.ts (5 tests) 5ms
+ ✓ apps/api/test/app.spec.ts (4 tests) 57ms
+
+ Test Files  2 passed (2)
+      Tests  9 passed (9)
+   Start at  15:26:30
+   Duration  460ms (transform 154ms, setup 0ms, collect 354ms, tests 62ms, environment 0ms, prepare 99ms)
+

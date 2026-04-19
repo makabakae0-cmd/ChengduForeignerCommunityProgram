@@ -136,7 +136,7 @@ describe("api routes", () => {
           name_en: "Draft Map Place",
           cover_file_id: null,
           cover_url: null,
-          category_level_1: "service",
+          category_level_1: "public-service",
           category_level_2: "community",
           tag_ids: ["service"],
           address_zh: "成都",
@@ -226,6 +226,129 @@ describe("api routes", () => {
     }
   });
 
+  it("supports admin places metadata create, update, and publish visibility", async () => {
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const createResponse = await fetch(`${baseUrl}/admin/places`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-mock-user-id": "user_001"
+        },
+        body: JSON.stringify({
+          name_zh: "共享分类地点",
+          name_en: "Shared Taxonomy Place",
+          cover_file_id: null,
+          cover_url: null,
+          category_level_1: "community",
+          category_level_2: "support-desk",
+          tag_ids: ["community"],
+          address_zh: "成都高新区",
+          address_en: "Chengdu High-tech Zone",
+          location: { latitude: 30.617, longitude: 104.0635 },
+          business_hours_zh: "周一至周五",
+          business_hours_en: "Mon-Fri",
+          intro_zh: "初始草稿",
+          intro_en: "Initial draft",
+          recommended_reason_zh: null,
+          recommended_reason_en: null,
+          is_recommended: false,
+          recommended_rank: 0,
+          gallery_file_ids: [],
+          gallery_urls: [],
+          tencent_map_poi_id: "poi_admin_001",
+          supports_navigation: true,
+          supports_favorite: true,
+          supports_share: true,
+          status: "draft"
+        })
+      });
+      const createData = await createResponse.json();
+
+      expect(createResponse.status).toBe(201);
+      expect(createData.data.category_level_1).toBe("community");
+      expect(createData.data.tencent_map_poi_id).toBe("poi_admin_001");
+      expect(createData.data.status).toBe("draft");
+
+      const updateResponse = await fetch(
+        `${baseUrl}/admin/places/${createData.data._id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_001"
+          },
+          body: JSON.stringify({
+            category_level_1: "health-wellness",
+            category_level_2: "clinic",
+            location: { latitude: 30.6182, longitude: 104.0651 },
+            tencent_map_poi_id: "poi_admin_002",
+            is_recommended: true,
+            recommended_reason_zh: "后台推荐理由",
+            recommended_reason_en: "Admin recommendation reason",
+            recommended_rank: 3,
+            status: "published"
+          })
+        }
+      );
+      const updateData = await updateResponse.json();
+
+      expect(updateResponse.status).toBe(200);
+      expect(updateData.data.category_level_1).toBe("health-wellness");
+      expect(updateData.data.category_level_2).toBe("clinic");
+      expect(updateData.data.location).toEqual({
+        latitude: 30.6182,
+        longitude: 104.0651
+      });
+      expect(updateData.data.tencent_map_poi_id).toBe("poi_admin_002");
+      expect(updateData.data.is_recommended).toBe(true);
+      expect(updateData.data.recommended_reason_en).toBe(
+        "Admin recommendation reason"
+      );
+      expect(updateData.data.recommended_rank).toBe(3);
+      expect(updateData.data.status).toBe("published");
+
+      const adminListResponse = await fetch(`${baseUrl}/admin/places`, {
+        headers: {
+          "x-mock-user-id": "user_001"
+        }
+      });
+      const adminListData = await adminListResponse.json();
+
+      expect(adminListResponse.status).toBe(200);
+      expect(
+        adminListData.data.items.some(
+          (item: { _id: string; category_level_1: string; status: string }) =>
+            item._id === createData.data._id &&
+            item.category_level_1 === "health-wellness" &&
+            item.status === "published"
+        )
+      ).toBe(true);
+
+      const detailResponse = await fetch(`${baseUrl}/places/${createData.data._id}`);
+      const detailData = await detailResponse.json();
+
+      expect(detailResponse.status).toBe(200);
+      expect(detailData.data.category_level_1).toBe("health-wellness");
+      expect(detailData.data.recommended_reason_zh).toBe("后台推荐理由");
+
+      const markerResponse = await fetch(`${baseUrl}/places/map-markers`);
+      const markerData = await markerResponse.json();
+
+      expect(markerResponse.status).toBe(200);
+      expect(
+        markerData.data.some(
+          (item: { _id: string; category_level_1: string }) =>
+            item._id === createData.data._id &&
+            item.category_level_1 === "health-wellness"
+        )
+      ).toBe(true);
+    } finally {
+      await close();
+    }
+  });
+
   it("supports the places v1 query baseline", async () => {
     const { baseUrl, close } = await createTestBaseUrl();
 
@@ -292,9 +415,22 @@ describe("api routes", () => {
       const markerData = await markerResponse.json();
 
       expect(markerResponse.status).toBe(200);
-      expect(markerData.data[0]).toHaveProperty("location");
+      expect(markerData.data).toHaveLength(2);
+      expect(Object.keys(markerData.data[0]).sort()).toEqual([
+        "_id",
+        "category_level_1",
+        "is_recommended",
+        "location",
+        "name_en",
+        "name_zh"
+      ]);
+      expect(markerData.data.map((item: { _id: string }) => item._id)).toEqual([
+        "place_001",
+        "place_002"
+      ]);
       expect(markerData.data[0]).not.toHaveProperty("gallery_urls");
       expect(markerData.data[0]).not.toHaveProperty("navigation");
+      expect(markerData.data[0]).not.toHaveProperty("address_zh");
 
       const invalidSortResponse = await fetch(`${baseUrl}/places?sort=latest`);
       const invalidSortData = await invalidSortResponse.json();

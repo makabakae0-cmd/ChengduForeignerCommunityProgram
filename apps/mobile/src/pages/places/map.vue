@@ -63,15 +63,16 @@ const renderedMarkers = computed<RenderedMarker[]>(() =>
     id: index,
     latitude: place.location.latitude,
     longitude: place.location.longitude,
-    width: 28,
-    height: 36,
+    width: place._id === selectedPlace.value?._id ? 34 : 28,
+    height: place._id === selectedPlace.value?._id ? 42 : 36,
     iconPath: MARKER_ICON_PATH,
     callout: {
       content: pickLocalized(state.locale, place.name_zh, place.name_en),
       color: "#ffffff",
       fontSize: 12,
       borderRadius: 16,
-      bgColor: "#0f766e",
+      bgColor:
+        place._id === selectedPlace.value?._id ? "#0f766e" : "#334155",
       padding: 8,
       display: "BYCLICK"
     }
@@ -150,8 +151,8 @@ onLoad((query) => {
 
     <AsyncStateCard v-if="loading" variant="loading" :text="mapCopy.loading" />
     <AsyncStateCard v-else-if="error" variant="error" :text="error" />
-    <view v-else-if="selectedPlace" class="detail-card">
-      <view class="detail-title">
+    <view v-else-if="selectedPlace" class="summary-card">
+      <view class="summary-title">
         {{
           pickLocalized(
             state.locale,
@@ -160,13 +161,9 @@ onLoad((query) => {
           )
         }}
       </view>
-      <view class="detail-meta">{{ selectedPlace.category_level_1 }}</view>
+      <view class="summary-meta">{{ selectedPlace.category_level_1 }}</view>
       <view v-if="selectedPlace.is_recommended" class="pill">
         {{ mapCopy.recommendedBadge }}
-      </view>
-      <view class="detail-meta">
-        {{ selectedPlace.location.latitude }},
-        {{ selectedPlace.location.longitude }}
       </view>
       <button class="primary" @click="openDetail">{{ mapCopy.openDetail }}</button>
     </view>
@@ -213,7 +210,7 @@ onLoad((query) => {
   color: #115e59;
 }
 
-.detail-card {
+.summary-card {
   margin-top: 24rpx;
   background: #ffffff;
   border-radius: 24rpx;
@@ -221,12 +218,12 @@ onLoad((query) => {
   box-shadow: 0 20rpx 40rpx rgba(15, 118, 110, 0.08);
 }
 
-.detail-title {
+.summary-title {
   font-size: 32rpx;
   font-weight: 600;
 }
 
-.detail-meta {
+.summary-meta {
   margin-top: 10rpx;
   color: #64748b;
 }

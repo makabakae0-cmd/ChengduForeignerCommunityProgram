@@ -25,7 +25,7 @@ describe("shared contracts", () => {
       name_en: "Tongzilin Community Center",
       cover_file_id: null,
       cover_url: null,
-      category_level_1: "service",
+      category_level_1: "public-service",
       category_level_2: "community",
       tag_ids: ["service"],
       address_zh: "成都",

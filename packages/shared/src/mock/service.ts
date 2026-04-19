@@ -13,6 +13,7 @@ import type {
 } from "../types/entities";
 import type { MockDataset } from "./data";
 import { FILE_PATH_RULES } from "../schemas/files";
+import { PLACE_TOP_LEVEL_CATEGORIES } from "../schemas/place-categories";
 
 import { createMockDataset } from "./data";
 
@@ -74,6 +75,42 @@ const sortPlaces = (items: Place[], sort: PageParams["sort"]) => {
 
     return left.name_en.localeCompare(right.name_en);
   });
+};
+
+const sortPlacesForMapMarkers = (items: Place[]) =>
+  [...items].sort((left, right) => {
+    if (left.is_recommended !== right.is_recommended) {
+      return left.is_recommended ? -1 : 1;
+    }
+
+    if (left.recommended_rank !== right.recommended_rank) {
+      return left.recommended_rank - right.recommended_rank;
+    }
+
+    const zhComparison = left.name_zh.localeCompare(right.name_zh);
+    if (zhComparison !== 0) {
+      return zhComparison;
+    }
+
+    const enComparison = left.name_en.localeCompare(right.name_en);
+    if (enComparison !== 0) {
+      return enComparison;
+    }
+
+    return left._id.localeCompare(right._id);
+  });
+
+const hasUsableCoordinates = (place: Pick<Place, "location">) => {
+  const { latitude, longitude } = place.location;
+
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
 };
 
 const toPlaceListItem = (place: Place): PlaceListItem => ({
@@ -419,11 +456,14 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
         return toPlaceDetail(place);
       },
       mapMarkers() {
-        return state.places
-          .filter(
+        return sortPlacesForMapMarkers(
+          state.places.filter(
             (place) =>
-              place.community_id === "tongzilin" && place.status === "published"
+              place.community_id === "tongzilin" &&
+              place.status === "published" &&
+              hasUsableCoordinates(place)
           )
+        )
           .map((place) => ({
             _id: place._id,
             name_zh: place.name_zh,
@@ -441,7 +481,8 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
           name_en: input.name_en ?? "",
           cover_file_id: input.cover_file_id ?? null,
           cover_url: input.cover_url ?? null,
-          category_level_1: input.category_level_1 ?? "",
+          category_level_1:
+            input.category_level_1 ?? PLACE_TOP_LEVEL_CATEGORIES[0],
           category_level_2: input.category_level_2 ?? "",
           tag_ids: input.tag_ids ?? [],
           address_zh: input.address_zh ?? "",
