@@ -140,10 +140,23 @@ export interface CommunityMapApiClient {
   };
 }
 
+const createRequestId = () => {
+  const runtimeCrypto =
+    typeof globalThis === "undefined" ? undefined : globalThis.crypto;
+
+  if (runtimeCrypto?.randomUUID) {
+    return runtimeCrypto.randomUUID();
+  }
+
+  return `mock_${Date.now().toString(36)}_${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+};
+
 const ok = <TData>(data: TData): ApiResult<TData> => ({
   success: true,
   data,
-  requestId: crypto.randomUUID()
+  requestId: createRequestId()
 });
 
 export const createMockClient = (

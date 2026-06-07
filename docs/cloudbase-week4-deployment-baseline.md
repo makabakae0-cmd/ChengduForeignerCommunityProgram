@@ -4,7 +4,7 @@ Last updated: 2026-06-07
 
 ```text
 Mini Program AppID: wx7518a3c1fcdd39a5
-AppSecret reset: no
+AppSecret reset: yes
 
 CloudBase dev env id: cloud1-d7gxdk8t43bd639c0
 CloudBase dev region: ap-shanghai
@@ -51,13 +51,13 @@ storage prefixes recorded: yes
 - private/exports/{job_id}/
 
 map manual verification:
-- marker loading: pending manual verification
-- marker selection: pending manual verification
-- detail jump: pending manual verification
-- detail navigation: pending manual verification
-- tool/device: pending
-- WeChat DevTools version: pending
-- notes: CloudBase baseline completed; Mini Program manual verification still needs WeChat DevTools.
+- marker loading: pass
+- marker selection: pass
+- detail jump: pass
+- detail navigation: pass
+- tool/device: WeChat DevTools simulator, iPhone 15 Pro Max
+- WeChat DevTools version: Stable 2.01.2510280
+- notes: Project imports and opens `/pages/places/map`; marker loading and marker selection were verified. Detail jump enters `/pages/places/detail?id=<place-id>`. Detail navigation triggers the WeChat native location/map flow and shows the target place; the external `qqmap://` routeplan URL cannot be fully opened in the desktop simulator, which is accepted as a simulator limitation for Week 4.
 
 code integration:
 - Mini Program manifest AppID: configured in apps/mobile/src/manifest.json
@@ -76,3 +76,5 @@ code integration:
 - Cloud storage was reachable and empty at the root; path rules were recorded only because no real files should be uploaded in this phase.
 - Production CloudBase resources were not created or modified.
 - `apps/api/src/providers/cloudbase/index.ts` now has a live `places` provider path for CloudBase NoSQL, while events/discover/files/notifications still use the mock fallback until their collections and security rules are ready.
+- Production CloudBase environment creation is moved to Week 11 full-chain integration.
+- `/api` route creation is moved to Week 8 and remains deferred until `community-map-api` is deployed as the formal HTTP function.

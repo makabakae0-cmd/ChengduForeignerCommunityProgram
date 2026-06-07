@@ -2,17 +2,15 @@ const withQuery = (
   path: string,
   query?: Record<string, string | number | boolean | undefined>
 ) => {
-  const searchParams = new URLSearchParams();
+  const searchParams = Object.entries(query ?? {})
+    .filter((entry): entry is [string, string | number | boolean] => {
+      return entry[1] !== undefined;
+    })
+    .map(([key, value]) => {
+      return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+    });
 
-  Object.entries(query ?? {}).forEach(([key, value]) => {
-    if (value === undefined) {
-      return;
-    }
-
-    searchParams.set(key, String(value));
-  });
-
-  return searchParams.size > 0 ? `${path}?${searchParams.toString()}` : path;
+  return searchParams.length > 0 ? `${path}?${searchParams.join("&")}` : path;
 };
 
 export const placesPagePaths = {

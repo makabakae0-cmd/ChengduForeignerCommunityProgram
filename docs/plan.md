@@ -112,14 +112,14 @@ End goal:
 - Start admin support for place coordinates, POI references, categories, and recommendation fields.
 - Complete deployment catch-up work that should have been explicit in Weeks 1-3:
   - confirm the WeChat Mini Program account, real AppID, developer roles, and tester roles
-  - create or confirm CloudBase `dev` and `prod` environments, and record env IDs, region, HTTP function name, and admin hosting domain
+  - create or confirm CloudBase `dev`, record env ID, region, HTTP function name, and admin hosting domain; keep `prod` pending until Week 11 environment separation work
   - register v1 collections: `users`, `places`, `file_assets`, `configs`, and `operation_logs`
   - list upcoming collections for later weeks: `events`, `posts`, `comments`, `announcements`, and `notifications`
   - register minimum `places` indexes for Week 4 list/map reads: `community_id + status`, `category_level_1`, `category_level_2`, `is_recommended`, and `recommended_rank`
   - freeze cloud storage paths: `public/places/{place_id}/`, `public/events/{event_id}/`, `public/posts/{post_id}/`, `private/tickets/{registration_id}/`, and `private/exports/{job_id}/`
   - document that the production Mini Program should prefer `wx.cloud.callHTTPFunction` for the HTTP cloud function, while Web admin uses the CloudBase HTTP access HTTPS domain
 - Verify Week 4 against the real deployment baseline:
-  - Mini Program AppID, CloudBase `dev` / `prod` env IDs, HTTP function name, and admin hosting domain are recorded in this plan or a linked deployment registry
+  - Mini Program AppID, CloudBase `dev` env ID, HTTP function name, and admin hosting domain are recorded in this plan or a linked deployment registry; `prod` remains a Week 11 item
   - CloudBase `dev` has the v1 required collections created with names aligned to shared/entity naming
   - `places` public list/map/detail field boundaries match between mock and CloudBase handler contracts
   - the map page is manually verified in WeChat Developer Tools or on a test device for marker loading, marker selection, detail jump, and detail navigation
@@ -180,6 +180,7 @@ End goal:
   - detail
   - admin create/update
   - gallery media read
+- Deploy `community-map-api` as the formal HTTP function for dev and create the CloudBase HTTP access `/api` route only after the function is no longer an Event placeholder.
 - By the end of this week, `places` frontend main features must be complete.
 
 ### Week 9: Global backend completion pass 1
@@ -210,6 +211,7 @@ End goal:
   - `events` / `discover` frontend + unified backend
   - mock provider and CloudBase handler behavior
   - CloudBase `dev` / `prod` environment separation, database security rules, HTTP cloud function logs, and admin static hosting
+- Create or confirm the CloudBase `prod` environment during this environment separation pass, keeping region aligned with dev and avoiding production data writes until release readiness.
 - Add or finish coverage for:
   - invalid input
   - insufficient permission
@@ -266,7 +268,7 @@ End goal:
 ## Known Conflicts / Required Plan Adjustments
 
 - `apps/api/src/providers/cloudbase/index.ts` currently reuses the mock provider. CloudBase handler/mock parity exists, but a real CloudBase database provider remains pending.
-- `apps/mobile/src/manifest.json` does not yet contain the real `mp-weixin.appid`; AppID registration and configuration must be handled as Week 4 catch-up.
+- `apps/mobile/src/manifest.json` now contains the real root AppID and `mp-weixin.appid`; Week 4 follow-up is limited to WeChat DevTools retest and manual map acceptance.
 - The mobile API client currently supports mock or `uni.request`/fetch-style HTTP calls. Production Mini Program deployment must add a CloudBase HTTP function call mode so release builds do not depend on local HTTP or mock actor headers.
 - The current admin places gallery flow still accepts manually entered URLs. This conflicts with the cloud storage + files flow and must be replaced during Week 5-6 media work.
 - The original plan placed CloudBase/Koa parity in Week 10. The minimum deployment baseline now starts in Week 4 so Week 8 can verify `places` against CloudBase `dev`.
@@ -422,14 +424,14 @@ End goal:
 - 开始补后台中的坐标、POI、分类和推荐位字段支持。
 - 补齐第 1-3 周没有显式写入计划的部署前置工作：
   - 确认微信小程序账号、真实 AppID、开发者权限和体验者权限
-  - 创建或确认 CloudBase `dev` 和 `prod` 环境，并记录 env id、区域、HTTP 云函数名和 admin 托管域名
+  - 创建或确认 CloudBase `dev` 环境，并记录 env id、区域、HTTP 云函数名和 admin 托管域名；`prod` 保持 pending，移到第 11 周环境隔离工作中处理
   - 注册 v1 必需集合：`users`、`places`、`file_assets`、`configs`、`operation_logs`
   - 列出后续周需要接入的集合：`events`、`posts`、`comments`、`announcements`、`notifications`
   - 为第 4 周 places list/map 查询登记最低索引：`community_id + status`、`category_level_1`、`category_level_2`、`is_recommended`、`recommended_rank`
   - 固定云存储路径：`public/places/{place_id}/`、`public/events/{event_id}/`、`public/posts/{post_id}/`、`private/tickets/{registration_id}/`、`private/exports/{job_id}/`
   - 明确生产小程序优先使用 `wx.cloud.callHTTPFunction` 调用 HTTP 云函数，Web admin 使用 CloudBase HTTP 访问服务 HTTPS 域名
 - 第 4 周验收必须覆盖真实部署基线：
-  - 小程序 AppID、CloudBase `dev` / `prod` env id、HTTP 云函数名、admin 托管域名已记录在本计划或关联部署登记文档中
+  - 小程序 AppID、CloudBase `dev` env id、HTTP 云函数名、admin 托管域名已记录在本计划或关联部署登记文档中；`prod` 作为第 11 周事项保留
   - CloudBase `dev` 环境已创建 v1 必需集合，集合命名与 shared/entity 命名一致
   - `places` public list/map/detail 在 mock 与 CloudBase handler contract 下字段边界一致
   - 地图页已在微信开发者工具或测试真机中完成人工验证：marker 加载、marker 选中、跳详情、详情导航
@@ -490,6 +492,7 @@ End goal:
   - detail
   - admin create/update
   - gallery media read
+- 将 `community-map-api` 部署为 dev 正式 HTTP 函数，并且只在它不再是 Event 占位函数后创建 CloudBase HTTP 访问服务 `/api` 路由。
 - 到本周结束，`places` 前端主功能必须全部完成。
 
 ### 第 9 周：全局后端补齐第 1 轮
@@ -520,6 +523,7 @@ End goal:
   - `events` / `discover` 前端 + 统一 backend
   - mock provider 与 CloudBase handler 行为一致性
   - CloudBase `dev` / `prod` 环境隔离、数据库安全规则、HTTP 云函数日志和 admin 静态托管
+- 在本轮环境隔离工作中创建或确认 CloudBase `prod` 环境，区域与 dev 保持一致；发布准备完成前不写入生产业务数据。
 - 补齐或完成以下负路径覆盖：
   - 参数非法
   - 权限不足
@@ -576,7 +580,7 @@ End goal:
 ## 已知冲突 / 必须调整的计划点
 
 - `apps/api/src/providers/cloudbase/index.ts` 当前仍复用 mock provider。CloudBase handler/mock parity 已有，但真实 CloudBase 数据库 provider 仍待接入。
-- `apps/mobile/src/manifest.json` 还没有真实 `mp-weixin.appid`；AppID 注册与配置必须作为第 4 周补课项处理。
+- `apps/mobile/src/manifest.json` 已包含真实根 AppID 和 `mp-weixin.appid`；第 4 周后续只需要微信开发者工具复测和地图人工验收。
 - 当前移动端 API client 支持 mock 或 `uni.request`/fetch 风格 HTTP 调用。生产小程序部署必须新增 CloudBase HTTP function 调用模式，避免发布版本依赖本地 HTTP 或 mock actor header。
 - 当前后台 places 图集仍可手填 URL。这与云存储 + files flow 冲突，必须在第 5-6 周媒体工作中替换。
 - 原计划把 CloudBase/Koa parity 放在第 10 周。现在最低部署基线必须从第 4 周开始建立，否则第 8 周无法用 CloudBase `dev` 验证 places。
