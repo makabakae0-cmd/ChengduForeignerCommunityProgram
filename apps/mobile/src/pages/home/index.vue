@@ -33,66 +33,75 @@ onMounted(load);
 </script>
 
 <template>
-  <scroll-view scroll-y class="page">
-    <view class="hero">
-      <view class="eyebrow">Tongzilin</view>
-      <view class="title">{{ copy.homeTitle }}</view>
-      <view class="subtitle">{{ copy.homeSubtitle }}</view>
-    </view>
-
-    <SectionPanel title="Events" subtitle="活动骨架已接入统一 DTO">
-      <view v-for="event in events" :key="event._id" class="list-item" @click="open(`/pages/events/detail?id=${event._id}`)">
-        <view>{{ pickLocalized(state.locale, event.title_zh, event.title_en) }}</view>
-        <view class="caption">{{ event.start_time }}</view>
+  <scroll-view scroll-y enable-flex class="page-scroll">
+    <view class="page">
+      <view class="hero">
+        <view class="eyebrow">Tongzilin</view>
+        <view class="title">{{ copy.homeTitle }}</view>
+        <view class="subtitle">{{ copy.homeSubtitle }}</view>
       </view>
-    </SectionPanel>
 
-    <SectionPanel title="Announcements" subtitle="公告列表已连通">
-      <view v-for="item in announcements" :key="item._id" class="list-item">
-        <view>{{ pickLocalized(state.locale, item.title_zh, item.title_en) }}</view>
-      </view>
-    </SectionPanel>
-
-    <SectionPanel title="Places" subtitle="从首页直接进入完整地点列表或推荐地点。">
-      <view class="places-actions">
-        <button class="action-button" @click="open(placesPagePaths.list())">
-          查看地点列表
-        </button>
-        <button
-          class="action-button ghost"
-          @click="open(placesPagePaths.recommended())"
-        >
-          查看推荐地点
-        </button>
-      </view>
-      <view
-        v-for="place in places"
-        :key="place._id"
-        class="list-item"
-        @click="open(`/pages/places/detail?id=${place._id}`)"
-      >
-        <view>{{ pickLocalized(state.locale, place.name_zh, place.name_en) }}</view>
-        <view class="caption">
-          {{ pickLocalized(state.locale, place.short_address_zh, place.short_address_en) }}
+      <SectionPanel title="Events" subtitle="活动骨架已接入统一 DTO">
+        <view v-for="event in events" :key="event._id" class="list-item" @click="open(`/pages/events/detail?id=${event._id}`)">
+          <view>{{ pickLocalized(state.locale, event.title_zh, event.title_en) }}</view>
+          <view class="caption">{{ event.start_time }}</view>
         </view>
-      </view>
-    </SectionPanel>
+      </SectionPanel>
 
-    <SectionPanel :title="copy.moreActions">
-      <view class="quick-grid">
-        <view class="quick-item" @click="open('/pages/more/login')">登录</view>
-        <view class="quick-item" @click="open('/pages/more/notifications')">通知中心</view>
-        <view class="quick-item" @click="open('/pages/more/my-registrations')">我的报名</view>
-        <view class="quick-item" @click="open('/pages/more/language-settings')">语言设置</view>
-      </view>
-    </SectionPanel>
+      <SectionPanel title="Announcements" subtitle="公告列表已连通">
+        <view v-for="item in announcements" :key="item._id" class="list-item">
+          <view>{{ pickLocalized(state.locale, item.title_zh, item.title_en) }}</view>
+        </view>
+      </SectionPanel>
+
+      <SectionPanel title="Places" subtitle="从首页直接进入完整地点列表或推荐地点。">
+        <view class="places-actions">
+          <button class="action-button" @click="open(placesPagePaths.list())">
+            查看地点列表
+          </button>
+          <button
+            class="action-button ghost"
+            @click="open(placesPagePaths.recommended())"
+          >
+            查看推荐地点
+          </button>
+        </view>
+        <view
+          v-for="place in places"
+          :key="place._id"
+          class="list-item"
+          @click="open(`/pages/places/detail?id=${place._id}`)"
+        >
+          <view>{{ pickLocalized(state.locale, place.name_zh, place.name_en) }}</view>
+          <view class="caption">
+            {{ pickLocalized(state.locale, place.short_address_zh, place.short_address_en) }}
+          </view>
+        </view>
+      </SectionPanel>
+
+      <SectionPanel :title="copy.moreActions">
+        <view class="quick-grid">
+          <view class="quick-item" @click="open('/pages/more/login')">登录</view>
+          <view class="quick-item" @click="open('/pages/more/notifications')">通知中心</view>
+          <view class="quick-item" @click="open('/pages/more/my-registrations')">我的报名</view>
+          <view class="quick-item" @click="open('/pages/more/language-settings')">语言设置</view>
+        </view>
+      </SectionPanel>
+    </view>
   </scroll-view>
 </template>
 
 <style scoped>
+.page-scroll {
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
 .page {
   min-height: 100vh;
   padding: 24rpx;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 24rpx;
