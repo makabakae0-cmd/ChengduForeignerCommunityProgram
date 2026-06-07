@@ -1,0 +1,78 @@
+# CloudBase Week 4 Deployment Baseline
+
+Last updated: 2026-06-07
+
+```text
+Mini Program AppID: wx7518a3c1fcdd39a5
+AppSecret reset: no
+
+CloudBase dev env id: cloud1-d7gxdk8t43bd639c0
+CloudBase dev region: ap-shanghai
+CloudBase dev env name: cloud1
+CloudBase prod env id: pending
+CloudBase prod region: pending
+
+HTTP cloud function name: community-map-api
+HTTP cloud function status: existing / Active / Event / Nodejs18.15
+HTTP access dev domain: https://cloud1-d7gxdk8t43bd639c0.service.tcloudbase.com
+HTTP access prod domain: pending
+planned API route prefix: /api
+API route creation: deferred until HTTP function is deployed
+
+Admin hosting dev domain: https://cloud1-d7gxdk8t43bd639c0-1441004938.tcloudbaseapp.com
+Admin hosting prod domain: pending
+
+dev collections:
+- users: created
+- places: created
+- file_assets: created
+- configs: created
+- operation_logs: created
+
+future collections recorded only:
+- events: pending
+- posts: pending
+- comments: pending
+- announcements: pending
+- notifications: pending
+
+places indexes:
+- idx_places_community_status: created / community_id asc + status asc / non-unique
+- idx_places_category_level_1: created / category_level_1 asc / non-unique
+- idx_places_category_level_2: created / category_level_2 asc / non-unique
+- idx_places_is_recommended: created / is_recommended asc / non-unique
+- idx_places_recommended_rank: created / recommended_rank asc / non-unique
+
+storage prefixes recorded: yes
+- public/places/{place_id}/
+- public/events/{event_id}/
+- public/posts/{post_id}/
+- private/tickets/{registration_id}/
+- private/exports/{job_id}/
+
+map manual verification:
+- marker loading: pending manual verification
+- marker selection: pending manual verification
+- detail jump: pending manual verification
+- detail navigation: pending manual verification
+- tool/device: pending
+- WeChat DevTools version: pending
+- notes: CloudBase baseline completed; Mini Program manual verification still needs WeChat DevTools.
+
+code integration:
+- Mini Program manifest AppID: configured in apps/mobile/src/manifest.json
+- Mini Program CloudBase init env: cloud1-d7gxdk8t43bd639c0 when VITE_API_MODE=cloudbase-function
+- mobile API modes: mock / http / cloudbase-function
+- cloudbase-function target: community-map-api
+- CloudBase provider live mode: available for places when CLOUDBASE_PROVIDER_MODE=live and CLOUDBASE_ENV_ID or TCB_ENV is set
+- CloudBase provider fallback: mock provider when live mode is not explicitly enabled
+```
+
+## Execution Notes
+
+- CloudBase MCP auth status was `READY` and bound to `cloud1-d7gxdk8t43bd639c0`.
+- HTTP access service was already enabled; no `/api` or `/api/*` route was created because `community-map-api` is still an Event placeholder function.
+- Static hosting was already enabled and online; no Admin build artifact was uploaded.
+- Cloud storage was reachable and empty at the root; path rules were recorded only because no real files should be uploaded in this phase.
+- Production CloudBase resources were not created or modified.
+- `apps/api/src/providers/cloudbase/index.ts` now has a live `places` provider path for CloudBase NoSQL, while events/discover/files/notifications still use the mock fallback until their collections and security rules are ready.

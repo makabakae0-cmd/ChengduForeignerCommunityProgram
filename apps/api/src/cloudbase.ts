@@ -26,7 +26,7 @@ import type { ApiProvider } from "./providers/types";
 type HttpMethod = "GET" | "POST" | "PATCH";
 type CloudbaseEventHandler = (
   event: unknown,
-  context: CloudbaseContextLike
+  context: Partial<CloudbaseContextLike>
 ) => Promise<IntegrationResponse>;
 
 interface IntegrationResponse {
@@ -42,6 +42,13 @@ interface CloudbaseContextLike {
     httpMethod: string;
     headers?: Record<string, string | string[] | undefined>;
   };
+}
+
+interface CloudbaseFunctionEvent {
+  $url?: string;
+  $method?: string;
+  $headers?: Record<string, string | string[] | undefined>;
+  [key: string]: unknown;
 }
 
 interface RouteMatch {
@@ -132,9 +139,37 @@ const requireRole = async (
   return actor;
 };
 
+const isFunctionEvent = (event: unknown): event is CloudbaseFunctionEvent =>
+  typeof event === "object" && event !== null;
+
+const normalizeRequest = (
+  event: unknown,
+  context: Partial<CloudbaseContextLike>
+) => {
+  const functionEvent = isFunctionEvent(event) ? event : {};
+  const httpContext =
+    context.httpContext ??
+    ({
+      url: functionEvent.$url ?? "/",
+      httpMethod: functionEvent.$method ?? "GET",
+      headers: functionEvent.$headers
+    } satisfies CloudbaseContextLike["httpContext"]);
+  const body =
+    context.httpContext || !isFunctionEvent(event)
+      ? event
+      : Object.fromEntries(
+          Object.entries(event).filter(([key]) => !key.startsWith("$"))
+        );
+
+  return {
+    requestId: context.eventID ?? "req_cloudbase_function",
+    httpContext,
+    body
+  };
+};
+
 export const main: CloudbaseEventHandler = async (event, context) => {
-  const requestId = context.eventID;
-  const httpContext = context.httpContext as CloudbaseContextLike["httpContext"];
+  const { requestId, httpContext, body } = normalizeRequest(event, context);
   const url = new URL(httpContext.url, "http://localhost");
   const pathname = url.pathname;
   const method = httpContext.httpMethod.toUpperCase() as HttpMethod;
@@ -150,7 +185,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
     }
 
     if (method === "POST" && pathname === "/auth/login") {
-      const input = parseOrThrow(LoginRequestSchema, event);
+      const input = parseOrThrow(LoginRequestSchema, body);
       return ok(await provider.auth.login(input), requestId);
     }
 
@@ -184,7 +219,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
       const match = matchRoute("/events/:id/registrations", pathname);
 
       if (method === "POST" && match.matched) {
-        const input = parseOrThrow(CreateEventRegistrationInputSchema, event);
+        const input = parseOrThrow(CreateEventRegistrationInputSchema, body);
         return ok(
           await provider.events.createRegistration(match.params.id, input, actorId),
           requestId,
@@ -234,7 +269,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
     }
 
     if (method === "POST" && pathname === "/discover/posts") {
-      const input = parseOrThrow(CreatePostInputSchema, event);
+      const input = parseOrThrow(CreatePostInputSchema, body);
       return ok(await provider.posts.create(input, actorId), requestId, 201);
     }
 
@@ -242,7 +277,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
       const commentMatch = matchRoute("/discover/posts/:id/comments", pathname);
 
       if (method === "POST" && commentMatch.matched) {
-        const input = parseOrThrow(CreateCommentInputSchema, event);
+        const input = parseOrThrow(CreateCommentInputSchema, body);
         return ok(
           await provider.posts.createComment(commentMatch.params.id, input, actorId),
           requestId,
@@ -321,17 +356,17 @@ export const main: CloudbaseEventHandler = async (event, context) => {
     }
 
     if (method === "POST" && pathname === "/files/upload-requests") {
-      const input = parseOrThrow(CreateUploadRequestInputSchema, event);
+      const input = parseOrThrow(CreateUploadRequestInputSchema, body);
       return ok(await provider.files.createUploadRequest(input), requestId, 201);
     }
 
     if (method === "POST" && pathname === "/files/complete") {
-      const input = parseOrThrow(CompleteUploadInputSchema, event);
+      const input = parseOrThrow(CompleteUploadInputSchema, body);
       return ok(await provider.files.complete(input, actorId), requestId, 201);
     }
 
     if (method === "POST" && pathname === "/files/private-url") {
-      const input = parseOrThrow(PrivateUrlRequestInputSchema, event);
+      const input = parseOrThrow(PrivateUrlRequestInputSchema, body);
       return ok(await provider.files.privateUrl(input), requestId);
     }
 
@@ -340,7 +375,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
         "community_admin",
         "system_admin"
       ]);
-      const input = parseOrThrow(CreateEventInputSchema, event);
+      const input = parseOrThrow(CreateEventInputSchema, body);
       return ok(await provider.events.create(input, actor._id), requestId, 201);
     }
 
@@ -352,7 +387,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
           "community_admin",
           "system_admin"
         ]);
-        const input = parseOrThrow(UpdateEventInputSchema, event);
+        const input = parseOrThrow(UpdateEventInputSchema, body);
         const item = await provider.events.update(match.params.id, input);
 
         if (!item) {
@@ -371,7 +406,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
           "community_admin",
           "system_admin"
         ]);
-        const input = parseOrThrow(ReviewEventInputSchema, event);
+        const input = parseOrThrow(ReviewEventInputSchema, body);
         const item = await provider.events.review(match.params.id, input);
 
         if (!item) {
@@ -390,7 +425,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
           "community_admin",
           "system_admin"
         ]);
-        const input = parseOrThrow(CheckinInputSchema, event);
+        const input = parseOrThrow(CheckinInputSchema, body);
         const ticket = await provider.events.checkin(
           match.params.id,
           input.ticket_id
@@ -409,7 +444,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
         "community_admin",
         "system_admin"
       ]);
-      const input = parseOrThrow(CreatePlaceInputSchema, event);
+      const input = parseOrThrow(CreatePlaceInputSchema, body);
       return ok(await provider.places.create(input), requestId, 201);
     }
 
@@ -429,7 +464,7 @@ export const main: CloudbaseEventHandler = async (event, context) => {
           "community_admin",
           "system_admin"
         ]);
-        const input = parseOrThrow(UpdatePlaceInputSchema, event);
+        const input = parseOrThrow(UpdatePlaceInputSchema, body);
         const item = await provider.places.update(match.params.id, input);
 
         if (!item) {

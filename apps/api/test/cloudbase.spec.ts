@@ -25,6 +25,27 @@ describe("cloudbase event handler", () => {
     expect((response.body as any).data.items.length).toBeGreaterThan(0);
   });
 
+  it("accepts mini program cloud function style routing metadata", async () => {
+    const response = await main(
+      {
+        $url: "/places/map-markers",
+        $method: "GET",
+        $headers: {
+          "x-mock-user-id": "user_001"
+        }
+      },
+      {
+        eventID: "req_cloud_function_style"
+      } as any
+    );
+    const body = response.body as any;
+
+    expect(response.statusCode).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data.length).toBeGreaterThan(0);
+    expect(body.data[0]).toHaveProperty("location");
+  });
+
   it("returns places list, detail, and markers in cloudbase mode", async () => {
     process.env.API_PROVIDER = "cloudbase";
 
