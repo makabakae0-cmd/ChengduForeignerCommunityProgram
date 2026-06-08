@@ -88,6 +88,8 @@ pnpm --filter @community-map/mobile dev:h5
 pnpm dev:mobile:mp
 ```
 
+微信小程序端 UI 组件库默认使用 TDesign MiniProgram，规范入口见 `docs/ui-guidelines.md`。新增小程序页面、表单、弹窗、按钮、列表、Toast、Tab、空状态和加载状态时，应优先使用或参考 TDesign MiniProgram。
+
 ### 4. 运行 API
 
 标准开发命令：

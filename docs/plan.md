@@ -137,6 +137,7 @@ End goal:
 - Start attaching place gallery support through the files flow so detail pages can render real media.
 - Ensure detail media rendering uses the registered cloud storage/file flow rather than hard-coded or manually entered gallery URL text.
 - Verify that `places` detail renders real image URLs as images and no longer displays gallery URLs as plain text.
+- Align the existing Mini Program UI to the TDesign MiniProgram guidelines; Week 5 must at least cover `places` detail plus any touched lists, dialogs, buttons, feedback, loading, and empty states.
 
 ### Week 6: `places` filtering/recommendation pages + admin places v1
 
@@ -449,6 +450,7 @@ End goal:
 - 通过 files 流开始支持地点图集，让详情页可以渲染真实媒体。
 - 确保详情页媒体渲染使用已注册的云存储 / files flow，不再依赖硬编码或后台手填的 gallery URL 文本。
 - 验证 `places` 详情页能将真实图片 URL 渲染为图片，不再把 gallery URL 当普通文本显示。
+- 将现有小程序 UI 统一到 TDesign MiniProgram 规范；Week 5 至少覆盖 `places` 详情页以及当周触达的列表、弹窗、按钮、反馈、加载和空状态。
 
 ### 第 6 周：`places` 筛选/推荐页 + 后台 places 管理 v1
 

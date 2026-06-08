@@ -118,6 +118,9 @@ importers:
       '@dcloudio/uni-mp-weixin':
         specifier: 3.0.0-4030620241128001
         version: 3.0.0-4030620241128001(@vueuse/core@12.0.0(typescript@5.9.3))(postcss@8.5.8)(rollup@4.60.0)(vue@3.4.21(typescript@5.9.3))
+      tdesign-miniprogram:
+        specifier: ^1.15.1
+        version: 1.15.1
       vue:
         specifier: 3.4.21
         version: 3.4.21(typescript@5.9.3)
@@ -3807,6 +3810,9 @@ packages:
   tapable@2.3.2:
     resolution: {integrity: sha512-1MOpMXuhGzGL5TTCZFItxCc0AARf1EZFQkGqMm7ERKj8+Hgr5oLvJOVFcC+lRmR8hCe2S3jC4T5D7Vg/d7/fhA==}
     engines: {node: '>=6'}
+
+  tdesign-miniprogram@1.15.1:
+    resolution: {integrity: sha512-RTqsiNplYU3lLmpPFzIsT1WgfX226F8Xw6siWJ2B9iR1JYblMTxX6WniT0hl5vgS2J9lMYNjo06BIGPuGov2UA==}
 
   terser@5.46.1:
     resolution: {integrity: sha512-vzCjQO/rgUuK9sf8VJZvjqiqiHFaZLnOiimmUuOKODxWL8mm/xua7viT7aqX7dgPY60otQjUotzFMmCB4VdmqQ==}
@@ -8463,6 +8469,8 @@ snapshots:
   systemjs@6.15.1: {}
 
   tapable@2.3.2: {}
+
+  tdesign-miniprogram@1.15.1: {}
 
   terser@5.46.1:
     dependencies:
