@@ -1,0 +1,21 @@
+@echo off
+setlocal
+
+set SCRIPT_DIR=%~dp0
+if "%SCRIPT_DIR:~-1%"=="\" set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
+for %%I in ("%SCRIPT_DIR%\..\..\..") do set ROOT_DIR=%%~fI
+
+if not exist "%SCRIPT_DIR%\logs" mkdir "%SCRIPT_DIR%\logs"
+
+pushd "%ROOT_DIR%"
+call .\node_modules\.bin\vitest.cmd run apps\api\test\app.spec.ts apps\api\test\cloudbase.spec.ts > "%SCRIPT_DIR%\logs\vitest.log" 2>&1
+set EXIT_CODE=%ERRORLEVEL%
+if not %EXIT_CODE%==0 goto :done
+call .\node_modules\.bin\tsc.cmd -p apps\api\tsconfig.json --noEmit > "%SCRIPT_DIR%\logs\api-typecheck.log" 2>&1
+set EXIT_CODE=%ERRORLEVEL%
+:done
+type "%SCRIPT_DIR%\logs\vitest.log"
+if exist "%SCRIPT_DIR%\logs\api-typecheck.log" type "%SCRIPT_DIR%\logs\api-typecheck.log"
+popd
+
+exit /b %EXIT_CODE%

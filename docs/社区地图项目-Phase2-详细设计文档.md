@@ -4,7 +4,7 @@
 > 编写日期：2026-03-23  
 > 文档形态：正式交付版 Markdown  
 > 适用范围：桐梓林社区微信小程序 + Web 轻后台 + CloudBase 云开发环境  
-> 说明：本版依据 2026-03-23 会议结论重写，正式方案调整为 `events`、`discover`、`places` 三个平级模块，并统一采用 `uni-app + 腾讯地图 + CloudBase 文档型数据库 + 微信云存储 + HTTP 云函数/BFF + Web 轻后台` 技术路线。
+> 说明：本版依据 2026-03-23 会议结论重写，正式方案调整为 `events`、`discover`、`places` 三个平级模块，并统一采用 `uni-app + TDesign MiniProgram + 腾讯地图 + CloudBase 文档型数据库 + 微信云存储 + HTTP 云函数/BFF + Web 轻后台` 技术路线。
 
 ## 一、文档概述
 
@@ -508,6 +508,8 @@ flowchart LR
 
 ## 六、页面与交互设计要点
 
+小程序端 UI 组件库统一采用 TDesign MiniProgram。页面布局、按钮、输入框、表单、弹窗、Toast、Tab、列表、空状态、加载状态等应优先参考 TDesign MiniProgram 的组件和设计风格；自定义样式应与 TDesign MiniProgram 的视觉语言保持一致，并优先通过统一主题变量、样式 token 或公共样式文件实现。详细规范见 `docs/ui-guidelines.md`。
+
 ### 6.1 首页 / 社区导览页
 
 - 顶部展示桐梓林社区标识和双语切换
@@ -721,7 +723,8 @@ V1.2 采用“公私分层”策略：
 | `business_hours_zh / business_hours_en` | 双语营业时间 |
 | `intro_zh / intro_en` | 双语简介 |
 | `gallery_file_ids` | 图集文件列表 |
-| `gallery_urls` | 图集访问地址 |
+| `gallery_media` | 由 files flow 解析出的结构化图集媒体 |
+| `gallery_urls` | 由 `gallery_media.url` 派生的兼容访问地址 |
 | `status` | 发布状态 |
 
 #### 8.3.6 帖子 `post`
@@ -811,7 +814,7 @@ V1.2 采用“公私分层”策略：
 
 V1.2 推荐总体架构如下：
 
-- 微信小程序前台：`uni-app + Vue 3 + TypeScript`
+- 微信小程序前台：`uni-app + Vue 3 + TypeScript + TDesign MiniProgram`
 - Web 轻后台：前端静态站点
 - API 层：CloudBase `HTTP 云函数/BFF`
 - 数据层：CloudBase 文档型数据库
@@ -844,6 +847,7 @@ flowchart TB
 - 不直接写核心业务集合
 - 不直接把文件引用绑定到业务对象
 - 所有关键业务状态以 BFF 返回为准
+- 小程序页面和端内组件默认采用 TDesign MiniProgram；不要随意引入其他 UI 组件库。
 
 ### 9.3 HTTP 云函数/BFF 层
 

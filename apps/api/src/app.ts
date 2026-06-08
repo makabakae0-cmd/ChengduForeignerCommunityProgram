@@ -16,7 +16,7 @@ import { registerPlaceRoutes } from "./routes/places";
 export const createApp = (mode?: string) => {
   const app = new Koa();
   const router = new Router();
-  const provider = createProvider(mode);
+  const provider = createProvider(mode, { fresh: true });
 
   app.context.state = {
     provider

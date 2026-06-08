@@ -29,6 +29,15 @@ export const registerPlaceRoutes = (router: Router) => {
     sendSuccess(ctx, place);
   });
 
+  router.get(
+    "/admin/places",
+    requireRole("community_admin", "system_admin"),
+    async (ctx) => {
+      const data = await ctx.state.provider.places.listAdmin();
+      sendSuccess(ctx, data);
+    }
+  );
+
   router.post("/admin/places", requireRole("community_admin", "system_admin"), async (ctx) => {
     const input = parseOrThrow(CreatePlaceInputSchema, ctx.request.body);
     const place = await ctx.state.provider.places.create(input);

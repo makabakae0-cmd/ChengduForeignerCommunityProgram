@@ -70,6 +70,9 @@ export const createMockProvider = (): ApiProvider => {
       async list(input) {
         return service.places.list(input);
       },
+      async listAdmin() {
+        return service.places.listAdmin();
+      },
       async detail(id) {
         return service.places.detail(id);
       },

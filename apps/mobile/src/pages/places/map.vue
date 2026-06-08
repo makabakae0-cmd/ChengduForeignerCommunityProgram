@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import type { PlaceMapMarker } from "@community-map/shared";
+import { onLoad } from "@dcloudio/uni-app";
 
 import { mobileApi } from "@/api/client";
+import AsyncStateCard from "@/components/AsyncStateCard.vue";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
+import { getPlacesCopy } from "./copy";
+import { placesPagePaths } from "./navigation";
+import { usePlaceAsyncState } from "./usePlaceAsyncState";
 
 interface RenderedMarker {
   id: number;
@@ -32,12 +37,15 @@ const MARKER_ICON_PATH = "/static/place-marker.svg";
 
 const { state } = useAppStore();
 const places = ref<PlaceMapMarker[]>([]);
-const loading = ref(true);
+const { loading, error, run } = usePlaceAsyncState();
 const selectedPlaceId = ref<string | null>(null);
+const presetPlaceId = ref<string | null>(null);
 
+const mapCopy = computed(() => getPlacesCopy(state.locale, "map"));
 const selectedPlace = computed(
   () =>
     places.value.find((place) => place._id === selectedPlaceId.value) ??
+    places.value.find((place) => place._id === presetPlaceId.value) ??
     places.value[0] ??
     null
 );
@@ -55,15 +63,16 @@ const renderedMarkers = computed<RenderedMarker[]>(() =>
     id: index,
     latitude: place.location.latitude,
     longitude: place.location.longitude,
-    width: 28,
-    height: 36,
+    width: place._id === selectedPlace.value?._id ? 34 : 28,
+    height: place._id === selectedPlace.value?._id ? 42 : 36,
     iconPath: MARKER_ICON_PATH,
     callout: {
       content: pickLocalized(state.locale, place.name_zh, place.name_en),
       color: "#ffffff",
       fontSize: 12,
       borderRadius: 16,
-      bgColor: "#0f766e",
+      bgColor:
+        place._id === selectedPlace.value?._id ? "#0052d9" : "#334155",
       padding: 8,
       display: "BYCLICK"
     }
@@ -71,14 +80,19 @@ const renderedMarkers = computed<RenderedMarker[]>(() =>
 );
 
 const loadMarkers = async () => {
-  loading.value = true;
-  try {
-    const result = await mobileApi.places.mapMarkers();
-    places.value = result.data;
-    selectedPlaceId.value = result.data[0]?._id ?? null;
-  } finally {
-    loading.value = false;
+  const result = await run(() => mobileApi.places.mapMarkers(), mapCopy.value.error);
+
+  if (!result) {
+    places.value = [];
+    selectedPlaceId.value = null;
+    return;
   }
+
+  places.value = result.data;
+  selectedPlaceId.value =
+    result.data.find((place) => place._id === presetPlaceId.value)?._id ??
+    result.data[0]?._id ??
+    null;
 };
 
 const handleMarkerTap = (event: { detail?: { markerId?: number } }) => {
@@ -99,19 +113,31 @@ const openDetail = () => {
   }
 
   uni.navigateTo({
-    url: `/pages/places/detail?id=${selectedPlace.value._id}`
+    url: placesPagePaths.detail(selectedPlace.value._id)
+  });
+};
+
+const openList = (recommended = false) => {
+  uni.navigateTo({
+    url: recommended ? placesPagePaths.recommended() : placesPagePaths.list()
   });
 };
 
 onMounted(loadMarkers);
+
+onLoad((query) => {
+  presetPlaceId.value = query?.id ? String(query.id) : null;
+});
 </script>
 
 <template>
   <view class="page">
-    <view class="title">社区地点地图</view>
-    <view class="subtitle"
-      >点击地图上的 marker 查看地点，并进入详情页或发起导航。</view
-    >
+    <view class="title">{{ mapCopy.title }}</view>
+    <view class="subtitle">{{ mapCopy.subtitle }}</view>
+    <view class="action-row">
+      <button class="secondary" @click="openList(false)">{{ mapCopy.openList }}</button>
+      <button class="secondary" @click="openList(true)">{{ mapCopy.openRecommended }}</button>
+    </view>
 
     <map
       class="map-card"
@@ -123,9 +149,10 @@ onMounted(loadMarkers);
       @markertap="handleMarkerTap"
     />
 
-    <view v-if="loading" class="empty">地图点位加载中...</view>
-    <view v-else-if="selectedPlace" class="detail-card">
-      <view class="detail-title">
+    <AsyncStateCard v-if="loading" variant="loading" :text="mapCopy.loading" />
+    <AsyncStateCard v-else-if="error" variant="error" :text="error" />
+    <view v-else-if="selectedPlace" class="summary-card">
+      <view class="summary-title">
         {{
           pickLocalized(
             state.locale,
@@ -134,14 +161,13 @@ onMounted(loadMarkers);
           )
         }}
       </view>
-      <view class="detail-meta">{{ selectedPlace.category_level_1 }}</view>
-      <view class="detail-meta">
-        {{ selectedPlace.location.latitude }},
-        {{ selectedPlace.location.longitude }}
+      <view class="summary-meta">{{ selectedPlace.category_level_1 }}</view>
+      <view v-if="selectedPlace.is_recommended" class="pill">
+        {{ mapCopy.recommendedBadge }}
       </view>
-      <button class="primary" @click="openDetail">查看地点详情</button>
+      <button class="primary" @click="openDetail">{{ mapCopy.openDetail }}</button>
     </view>
-    <view v-else class="empty">暂无已发布地点可显示。</view>
+    <AsyncStateCard v-else variant="empty" :text="mapCopy.empty" />
   </view>
 </template>
 
@@ -167,41 +193,56 @@ onMounted(loadMarkers);
 .map-card {
   width: 100%;
   height: 720rpx;
-  border-radius: 24rpx;
+  border-radius: 16rpx;
   overflow: hidden;
   background: #e2e8f0;
 }
 
-.detail-card {
-  margin-top: 24rpx;
-  background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx;
-  box-shadow: 0 20rpx 40rpx rgba(15, 118, 110, 0.08);
+.action-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
 }
 
-.detail-title {
+.secondary {
+  flex: 1;
+  border-radius: 8rpx;
+  background: #e6f4ff;
+  color: #0052d9;
+}
+
+.summary-card {
+  margin-top: 24rpx;
+  background: #ffffff;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 16rpx;
+  padding: 28rpx;
+}
+
+.summary-title {
   font-size: 32rpx;
   font-weight: 600;
 }
 
-.detail-meta {
+.summary-meta {
   margin-top: 10rpx;
   color: #64748b;
 }
 
-.primary {
-  margin-top: 24rpx;
-  background: #0f766e;
-  color: #ffffff;
+.pill {
+  display: inline-flex;
+  margin-top: 14rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 8rpx;
+  background: #fff7e6;
+  color: #ad5a00;
+  font-size: 22rpx;
 }
 
-.empty {
+.primary {
   margin-top: 24rpx;
-  padding: 32rpx 24rpx;
-  background: #ffffff;
-  border-radius: 24rpx;
-  color: #64748b;
-  text-align: center;
+  border-radius: 8rpx;
+  background: #0052d9;
+  color: #ffffff;
 }
 </style>

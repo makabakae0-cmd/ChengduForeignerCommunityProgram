@@ -109,8 +109,11 @@ export const createMockDataset = (): MockDataset => ({
       community_id: "tongzilin",
       name_zh: "桐梓林社区中心",
       name_en: "Tongzilin Community Center",
+      cover_file_id: "cloud://place-cover-001",
+      cover_url: "https://example.com/public/places/place_001/cover.jpg",
       category_level_1: "public-service",
       category_level_2: "community-center",
+      tag_ids: ["service", "family", "community"],
       address_zh: "成都市武侯区桐梓林北路 88 号",
       address_en: "No. 88, Tongzilin North Road, Wuhou District, Chengdu",
       location: {
@@ -122,8 +125,15 @@ export const createMockDataset = (): MockDataset => ({
       business_hours_en: "Mon-Sun 09:00-18:00",
       intro_zh: "社区活动、公告展示和居民服务的主要线下节点。",
       intro_en: "Main offline hub for events, announcements, and resident services.",
+      recommended_reason_zh: "初次到访桐梓林时最适合先了解社区服务的地点。",
+      recommended_reason_en: "Best first stop to understand local community services.",
+      is_recommended: true,
+      recommended_rank: 1,
       gallery_file_ids: ["cloud://place-001-1"],
-      gallery_urls: ["https://example.com/public/places/place_001/1.jpg"],
+      gallery_urls: [],
+      supports_navigation: true,
+      supports_favorite: true,
+      supports_share: true,
       status: "published"
     },
     {
@@ -131,8 +141,11 @@ export const createMockDataset = (): MockDataset => ({
       community_id: "tongzilin",
       name_zh: "国际友好咖啡馆",
       name_en: "Global Corner Cafe",
-      category_level_1: "food",
+      cover_file_id: "cloud://place-cover-002",
+      cover_url: "https://example.com/public/places/place_002/cover.jpg",
+      category_level_1: "food-drink",
       category_level_2: "cafe",
+      tag_ids: ["coffee", "social", "english-friendly"],
       address_zh: "成都市武侯区桐梓林南路 26 号",
       address_en: "No. 26, Tongzilin South Road, Wuhou District, Chengdu",
       location: {
@@ -144,9 +157,48 @@ export const createMockDataset = (): MockDataset => ({
       business_hours_en: "Mon-Sun 08:00-22:00",
       intro_zh: "适合国际居民会面和英语角的咖啡空间。",
       intro_en: "A cafe often used for meet-ups and language exchange.",
+      recommended_reason_zh: "适合第一次和邻里见面，环境对外籍居民友好。",
+      recommended_reason_en: "A friendly meet-up spot for newcomers and neighbors.",
+      is_recommended: true,
+      recommended_rank: 2,
       gallery_file_ids: ["cloud://place-002-1"],
-      gallery_urls: ["https://example.com/public/places/place_002/1.jpg"],
+      gallery_urls: [],
+      supports_navigation: true,
+      supports_favorite: true,
+      supports_share: true,
       status: "published"
+    },
+    {
+      _id: "place_003",
+      community_id: "tongzilin",
+      name_zh: "桐梓林便民服务站",
+      name_en: "Tongzilin Service Point",
+      cover_file_id: null,
+      cover_url: null,
+      category_level_1: "public-service",
+      category_level_2: "service-desk",
+      tag_ids: ["service", "documents"],
+      address_zh: "成都市武侯区桐梓林东路 12 号",
+      address_en: "No. 12, Tongzilin East Road, Wuhou District, Chengdu",
+      location: {
+        latitude: 30.6164,
+        longitude: 104.0641
+      },
+      tencent_map_poi_id: null,
+      business_hours_zh: "周一至周五 09:00-17:30",
+      business_hours_en: "Mon-Fri 09:00-17:30",
+      intro_zh: "提供基础便民咨询与社区事务引导。",
+      intro_en: "Offers basic community guidance and service referrals.",
+      recommended_reason_zh: null,
+      recommended_reason_en: null,
+      is_recommended: false,
+      recommended_rank: 0,
+      gallery_file_ids: [],
+      gallery_urls: [],
+      supports_navigation: true,
+      supports_favorite: true,
+      supports_share: true,
+      status: "draft"
     }
   ],
   posts: [
@@ -224,6 +276,26 @@ export const createMockDataset = (): MockDataset => ({
       biz_type: "event_cover",
       biz_id: "event_001",
       uploaded_by: "user_002",
+      status: "active"
+    },
+    {
+      _id: "file_place_001_1",
+      file_id: "cloud://place-001-1",
+      cloud_path: "public/places/place_001/1.jpg",
+      visibility: "public",
+      biz_type: "place_gallery",
+      biz_id: "place_001",
+      uploaded_by: "user_001",
+      status: "active"
+    },
+    {
+      _id: "file_place_002_1",
+      file_id: "cloud://place-002-1",
+      cloud_path: "public/places/place_002/1.jpg",
+      visibility: "public",
+      biz_type: "place_gallery",
+      biz_id: "place_002",
+      uploaded_by: "user_001",
       status: "active"
     }
   ]

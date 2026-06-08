@@ -5,4 +5,5 @@ export * from "./discover";
 export * from "./entities";
 export * from "./events";
 export * from "./files";
+export * from "./place-categories";
 export * from "./places";

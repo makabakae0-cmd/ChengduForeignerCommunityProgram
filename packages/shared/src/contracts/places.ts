@@ -3,6 +3,8 @@ import { z } from "zod";
 import { defineContract } from "./define-contract";
 import {
   CreatePlaceInputSchema,
+  PlaceDetailSchema,
+  PlaceListItemSchema,
   PlaceListQuerySchema,
   PlaceMapMarkerSchema,
   UpdatePlaceInputSchema
@@ -14,17 +16,22 @@ export const placeContracts = {
     method: "GET",
     path: "/places",
     request: PlaceListQuerySchema,
-    response: PlaceSchema
+    response: PlaceListItemSchema
   }),
   detail: defineContract({
     method: "GET",
     path: "/places/:id",
-    response: PlaceSchema
+    response: PlaceDetailSchema
   }),
   mapMarkers: defineContract({
     method: "GET",
     path: "/places/map-markers",
     response: z.array(PlaceMapMarkerSchema)
+  }),
+  adminList: defineContract({
+    method: "GET",
+    path: "/admin/places",
+    response: PlaceSchema
   }),
   adminCreate: defineContract({
     method: "POST",

@@ -1,0 +1,195 @@
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+personality = "pragmatic"
+
+
+
+notify = ["/Users/jerry/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+
+[features]
+multi_agent = true
+js_repl = false
+
+[sandbox_workspace_write]
+network_access = true
+
+[projects."/Users/jerry"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/zhuMangPaoDemo"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/2025-2026/Club"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/blind-run-backend"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/blind-run"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/communityMap/ChengduForeignerCommunityProgram"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/zhuMangPao"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/aili-notes-main"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/international-student-sim"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/2025-2026/AP European History/AP review"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/coffee-website"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/rate-my-teacher"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/2025-2026/AP CSP/CPT"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/Documents/Codex/2026-04-25/files-mentioned-by-the-user-ap55555"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/Documents/Codex/2026-04-25/files-mentioned-by-the-user-ap55555-2"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/2025-2026/AP Physics 2"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/daniel-is-bad"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/Documents/Codex/2026-04-26/files-mentioned-by-the-user-ea24fab1d05e840aeb723d5eefc1411e"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/Documents/Codex/2026-04-27/extract-all-the-contents-in-this"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/Documents/Codex/2026-04-27/make-a-visual-timeline-for-ap"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/A/blind_run_ios/blindRun"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/B/random stuff/Jerry"]
+trust_level = "trusted"
+
+[projects."/Users/jerry/2025-2026/AP CSP/csp-final-project"]
+trust_level = "trusted"
+
+[mcp_servers.linear]
+url = "https://mcp.linear.app/mcp"
+enabled = false
+
+[mcp_servers.notion]
+url = "https://mcp.notion.com/mcp"
+enabled = false
+
+[mcp_servers.xcodebuild]
+command = "npx"
+args = ["-y", "xcodebuildmcp@latest", "mcp"]
+startup_timeout_sec = 20.0
+tool_timeout_sec = 180.0
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+
+[mcp_servers.node_repl]
+args = []
+command = "/Applications/Coding/Codex.app/Contents/Resources/node_repl"
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = ""
+NODE_REPL_NODE_PATH = "/Applications/Coding/Codex.app/Contents/Resources/node"
+NODE_REPL_TRUSTED_CODE_PATHS = "/Users/jerry/.codex"
+CODEX_HOME = "/Users/jerry/.codex"
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "2de792ebdf729e85542c94275f6654821dddce546d9c7374c915f2297529e313"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
+BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
+BROWSER_USE_CODEX_APP_VERSION = "26.602.40724"
+SKY_CUA_SERVICE_PATH = "/Users/jerry/.codex/plugins/cache/openai-bundled/computer-use/1.0.809/Codex Computer Use.app"
+CODEX_CLI_PATH = "/Applications/Coding/Codex.app/Contents/Resources/codex"
+
+[mcp_servers.cloudbase]
+command = "npx"
+args = ["-y", "@cloudbase/cloudbase-mcp@latest"]
+
+[mcp_servers.cloudbase.env]
+INTEGRATION_IDE = "CodeX"
+
+[plugins."build-ios-apps@openai-curated"]
+enabled = true
+
+[plugins."build-web-apps@openai-curated"]
+enabled = true
+
+[plugins."test-android-apps@openai-curated"]
+enabled = false
+
+[plugins."canva@openai-curated"]
+enabled = false
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."documents@openai-primary-runtime"]
+enabled = false
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = false
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = false
+
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[plugins."chrome@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[apps.connector_68df038e0ba48191908c8434991bbac2]
+enabled = false
+
+[apps.connector_68df33b1a2d081918778431a9cfca8ba]
+enabled = false
+
+[marketplaces.openai-bundled]
+last_updated = "2026-06-07T12:15:45Z"
+source_type = "local"
+source = "/Users/jerry/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-06-07T07:19:22Z"
+source_type = "local"
+source = "/Users/jerry/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+
+[desktop]
+ambient-suggestions-enabled = false
+git-pull-request-merge-method = "merge"
+git-show-sidebar-pr-icons = true
+
+[desktop.open-in-target-preferences]
+global = "vscode"
+
+[desktop.open-in-target-preferences.perPath]
+"/Users/jerry/A/communityMap/ChengduForeignerCommunityProgram" = "vscode"
+"/Users/jerry/A/zhuMangPaoApp" = "vscode"

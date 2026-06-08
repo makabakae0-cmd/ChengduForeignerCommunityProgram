@@ -13,7 +13,12 @@ import type {
   PostSchema,
   UserSchema
 } from "../schemas/entities";
-import type { PlaceMapMarkerSchema } from "../schemas/places";
+import type {
+  PlaceDetailSchema,
+  PlaceGalleryMediaSchema,
+  PlaceListItemSchema,
+  PlaceMapMarkerSchema
+} from "../schemas/places";
 
 export type User = z.infer<typeof UserSchema>;
 export type AuthSession = z.infer<typeof AuthSessionSchema>;
@@ -21,6 +26,9 @@ export type Event = z.infer<typeof EventSchema>;
 export type EventRegistration = z.infer<typeof EventRegistrationSchema>;
 export type EventTicket = z.infer<typeof EventTicketSchema>;
 export type Place = z.infer<typeof PlaceSchema>;
+export type PlaceListItem = z.infer<typeof PlaceListItemSchema>;
+export type PlaceGalleryMedia = z.infer<typeof PlaceGalleryMediaSchema>;
+export type PlaceDetail = z.infer<typeof PlaceDetailSchema>;
 export type PlaceMapMarker = z.infer<typeof PlaceMapMarkerSchema>;
 export type Post = z.infer<typeof PostSchema>;
 export type Comment = z.infer<typeof CommentSchema>;
