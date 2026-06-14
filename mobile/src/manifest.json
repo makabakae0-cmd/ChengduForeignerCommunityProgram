@@ -1,0 +1,14 @@
+{
+  "name": "CFCP",
+  "appid": "__UNI__CFCPMVP",
+  "description": "Chengdu Foreigner Community Program",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    }
+  }
+}

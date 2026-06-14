@@ -1,0 +1,25 @@
+{
+  "name": "cfcp-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:mp-weixin": "vite build --watch --mode development",
+    "build:mp-weixin": "vite build --mode production"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-alpha-5010320260611001",
+    "@vue/compiler-sfc": "3.4.21",
+    "@vue/server-renderer": "3.4.21",
+    "pinia": "2.0.36",
+    "vue": "3.4.21",
+    "vue-router": "^4.0.6"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "3.4.31",
+    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5010320260611001",
+    "@vitejs/plugin-vue": "5.2.4",
+    "fs-extra": "10.1.0",
+    "typescript": "5.5.4",
+    "vite": "5.2.8"
+  }
+}

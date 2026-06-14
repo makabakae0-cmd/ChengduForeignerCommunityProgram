@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  OPEN
+  ONGOING
+  ENDED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CHECKED_IN
+  CANCELLED
+}
+
+enum NotificationType {
+  REGISTER_SUCCESS
+  BEFORE_START
+  EVENT_CHANGED
+}
+
+model Event {
+  id              String              @id @default(uuid())
+  title           String
+  coverUrl        String?
+  startTime       DateTime
+  endTime         DateTime
+  location        String
+  organizer       String
+  capacityTotal   Int
+  fee             Decimal             @db.Decimal(10, 2)
+  status          EventStatus         @default(OPEN)
+  agenda          Json?
+  details         String?
+  isPublished     Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  registrations   EventRegistration[]
+  reviews         EventReview[]
+  notifications   EventNotification[]
+
+  @@index([startTime])
+  @@index([status])
+}
+
+model EventRegistration {
+  id            String             @id @default(uuid())
+  userId        String
+  eventId       String
+  name          String
+  phone         String
+  status        RegistrationStatus @default(REGISTERED)
+  voucherToken  String             @unique
+  checkedIn     Boolean            @default(false)
+  checkedInAt   DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  event         Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+}
+
+model EventReview {
+  id          String   @id @default(uuid())
+  eventId     String
+  content     String?
+  mediaUrls   Json?
+  publishedAt DateTime @default(now())
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model EventNotification {
+  id        String           @id @default(uuid())
+  userId    String
+  eventId   String
+  type      NotificationType
+  createdAt DateTime         @default(now())
+  event     Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventId])
+}
