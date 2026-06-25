@@ -100,4 +100,3 @@ The system SHALL treat `GET /places/map-markers` as a lightweight marker contrac
 - **WHEN** the system returns map markers
 - **THEN** each marker only contains marker-safe fields such as id, localized name, top-level category, recommendation flag, and coordinates
 - **AND** the response does not include detail-only fields such as gallery, address body, intro, or navigation objects
-

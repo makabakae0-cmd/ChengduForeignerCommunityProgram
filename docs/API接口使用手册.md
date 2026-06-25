@@ -1,7 +1,7 @@
 # API 接口使用手册
 
-更新时间：2026-06-24  
-适用对象：Mobile、小程序、Admin、events、discover、places、files、notifications 等模块开发者  
+更新时间：2026-06-24
+适用对象：Mobile、小程序、Admin、events、discover、places、files、notifications 等模块开发者
 事实来源：`packages/shared/src/contracts/*`、`packages/shared/src/schemas/*`、`apps/api/src/routes/*`、`docs/已实现API接口清单.md`
 
 ## 1. 当前完善度结论

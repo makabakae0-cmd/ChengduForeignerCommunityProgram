@@ -111,7 +111,9 @@ describe("volunteer places spreadsheet import", () => {
         expect(place.is_recommended).toBe(false);
         expect(place.supports_navigation).toBe(false);
         expect(place.location).toEqual({ latitude: 999, longitude: 999 });
-        expect(place.import_review?.source_import_id).toBe(item.source_import_id);
+        expect(place.import_review?.source_import_id).toBe(
+          item.source_import_id
+        );
         expect(place.import_review?.review_blockers).toContain(
           "needs_coordinate_review"
         );
@@ -131,9 +133,9 @@ describe("volunteer places spreadsheet import", () => {
         fileAssets: []
       });
 
-      expect(service.places.list({ keyword: importedPlace.name_zh }).items).toEqual(
-        []
-      );
+      expect(
+        service.places.list({ keyword: importedPlace.name_zh }).items
+      ).toEqual([]);
       expect(service.places.mapMarkers()).toEqual([]);
       expect(service.places.detail(importedPlace._id)).toBeNull();
 
@@ -227,6 +229,7 @@ describe("volunteer places spreadsheet import", () => {
           status: 200,
           success: true,
           id: existingPlace._id,
+          reason: null,
           error: null
         },
         {
@@ -235,6 +238,7 @@ describe("volunteer places spreadsheet import", () => {
           status: 201,
           success: true,
           id: "place_created_by_api",
+          reason: null,
           error: null
         }
       ]);
@@ -243,11 +247,75 @@ describe("volunteer places spreadsheet import", () => {
         `${apiBaseUrl}/admin/places/${existingPlace._id}`,
         expect.objectContaining({ method: "PATCH" })
       );
+      expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+        import_review: PlaceSchema.parse(data.draft_places[0].place)
+          .import_review
+      });
       expect(fetchMock).toHaveBeenNthCalledWith(
         3,
         `${apiBaseUrl}/admin/places`,
         expect.objectContaining({ method: "POST" })
       );
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not overwrite reviewed or published imported places on rerun", async () => {
+    const { tempDir, data } = runImportCli();
+
+    try {
+      const draftPlace = PlaceSchema.parse(data.draft_places[0].place);
+      const publishedPlace = PlaceSchema.parse({
+        ...draftPlace,
+        status: "published",
+        location: { latitude: 30.615, longitude: 104.062 },
+        supports_navigation: true,
+        gallery_urls: ["https://example.com/reviewed-gallery.jpg"]
+      });
+      const apiBaseUrl = "http://127.0.0.1:8787";
+      const fetchMock = vi
+        .spyOn(globalThis, "fetch")
+        .mockImplementation(async (input, init) => {
+          const url = String(input);
+          const method = init?.method ?? "GET";
+
+          if (url === `${apiBaseUrl}/admin/places` && method === "GET") {
+            return new Response(
+              JSON.stringify({
+                success: true,
+                data: { items: [publishedPlace] }
+              })
+            );
+          }
+
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: { code: "UNEXPECTED_REQUEST", message: `${method} ${url}` }
+            }),
+            { status: 500 }
+          );
+        });
+
+      const importScriptPath = "../../../scripts/places_volunteer_import.mjs";
+      const { postDrafts } = await import(importScriptPath);
+      const results = await postDrafts(apiBaseUrl, "user_001", [
+        data.draft_places[0]
+      ]);
+
+      expect(results).toEqual([
+        {
+          source_import_id: data.draft_places[0].source_import_id,
+          action: "skipped",
+          status: 200,
+          success: true,
+          id: publishedPlace._id,
+          reason: "existing_import_status:published",
+          error: null
+        }
+      ]);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }

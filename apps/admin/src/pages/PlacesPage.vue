@@ -37,7 +37,10 @@ const hasUsableCoordinates = (place: Place) =>
   place.location.longitude <= 180;
 
 const getReviewIndicators = (place: Place) => {
-  const indicators: Array<{ type: "danger" | "warning" | "info"; label: string }> = [];
+  const indicators: Array<{
+    type: "danger" | "warning" | "info";
+    label: string;
+  }> = [];
 
   if (place.import_review) {
     indicators.push({ type: "info", label: "志愿者导入" });
@@ -93,6 +96,7 @@ const createEmptyForm = () => ({
   is_recommended: false,
   recommended_rank: 0,
   gallery_file_ids: [] as string[],
+  gallery_urls: [] as string[],
   gallery_file_name: "",
   status: "draft" as Place["status"],
   supports_navigation: true,
@@ -102,7 +106,10 @@ const createEmptyForm = () => ({
 
 const form = reactive(createEmptyForm());
 
-const issueMessage = (issue: { path: Array<string | number>; message: string }) =>
+const issueMessage = (issue: {
+  path: Array<string | number>;
+  message: string;
+}) =>
   issue.path.length > 0
     ? `${issue.path.join(".")}: ${issue.message}`
     : issue.message;
@@ -139,6 +146,7 @@ const fillForm = (place?: Place) => {
     is_recommended: place.is_recommended,
     recommended_rank: place.recommended_rank,
     gallery_file_ids: [...place.gallery_file_ids],
+    gallery_urls: [...place.gallery_urls],
     gallery_file_name: "",
     status: place.status,
     supports_navigation: place.supports_navigation,
@@ -174,7 +182,7 @@ const buildPayload = () => ({
   is_recommended: form.is_recommended,
   recommended_rank: Number(form.recommended_rank),
   gallery_file_ids: form.gallery_file_ids,
-  gallery_urls: [],
+  gallery_urls: form.gallery_urls,
   supports_navigation: form.supports_navigation,
   supports_favorite: form.supports_favorite,
   supports_share: form.supports_share,
@@ -238,7 +246,9 @@ const quickPublish = async (place: Place, status: Place["status"]) => {
 };
 
 const removeGalleryFile = (fileId: string) => {
-  form.gallery_file_ids = form.gallery_file_ids.filter((item) => item !== fileId);
+  form.gallery_file_ids = form.gallery_file_ids.filter(
+    (item) => item !== fileId
+  );
 };
 
 const registerGalleryFile = async () => {
@@ -327,15 +337,28 @@ onMounted(async () => {
           <el-input v-model="form.address_zh" placeholder="中文地址" />
           <el-input v-model="form.address_en" placeholder="英文地址" />
           <el-input v-model="form.cover_url" placeholder="封面 URL" />
-          <el-input v-model="form.tencent_map_poi_id" placeholder="腾讯 POI ID" />
-          <el-input-number v-model="form.latitude" :step="0.0001" placeholder="纬度" />
+          <el-input
+            v-model="form.tencent_map_poi_id"
+            placeholder="腾讯 POI ID"
+          />
+          <el-input-number
+            v-model="form.latitude"
+            :step="0.0001"
+            placeholder="纬度"
+          />
           <el-input-number
             v-model="form.longitude"
             :step="0.0001"
             placeholder="经度"
           />
-          <el-input v-model="form.business_hours_zh" placeholder="中文营业时间" />
-          <el-input v-model="form.business_hours_en" placeholder="英文营业时间" />
+          <el-input
+            v-model="form.business_hours_zh"
+            placeholder="中文营业时间"
+          />
+          <el-input
+            v-model="form.business_hours_en"
+            placeholder="英文营业时间"
+          />
           <el-input
             v-model="form.recommended_reason_zh"
             placeholder="中文推荐理由"
@@ -350,7 +373,9 @@ onMounted(async () => {
             placeholder="推荐排序"
           />
         </div>
-        <div v-if="submittingError" class="error-text">{{ submittingError }}</div>
+        <div v-if="submittingError" class="error-text">
+          {{ submittingError }}
+        </div>
         <el-input
           v-model="form.intro_zh"
           type="textarea"
@@ -366,14 +391,20 @@ onMounted(async () => {
         />
         <div class="switch-row">
           <el-switch v-model="form.is_recommended" active-text="推荐位" />
-          <el-switch v-model="form.supports_navigation" active-text="支持导航" />
+          <el-switch
+            v-model="form.supports_navigation"
+            active-text="支持导航"
+          />
           <el-switch v-model="form.supports_favorite" active-text="收藏入口" />
           <el-switch v-model="form.supports_share" active-text="分享入口" />
         </div>
         <div class="gallery-manager">
           <div class="gallery-header">
             <h4>地点图集</h4>
-            <span>通过 files flow 登记并挂接，移动端详情页按文件资产解析图片。</span>
+            <span
+              >通过 files flow
+              登记并挂接，移动端详情页按文件资产解析图片。</span
+            >
           </div>
           <div class="gallery-register-row">
             <el-input
@@ -442,7 +473,9 @@ onMounted(async () => {
       <el-table-column prop="status" label="状态" width="120" />
       <el-table-column label="操作" width="280">
         <template #default="{ row }">
-          <el-button link type="primary" @click="startEdit(row)">编辑</el-button>
+          <el-button link type="primary" @click="startEdit(row)"
+            >编辑</el-button
+          >
           <el-button
             link
             type="success"

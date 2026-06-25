@@ -38,4 +38,3 @@ The system SHALL route recommended-place browsing through the list page with a r
 - **WHEN** the user enters the recommended places flow
 - **THEN** the system opens the list page with recommended browsing filters applied
 - **AND** any legacy recommended route acts only as a compatibility redirect
-

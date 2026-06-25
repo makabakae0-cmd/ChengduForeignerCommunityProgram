@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from "node:fs";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -46,8 +52,8 @@ const INTERNAL_CATEGORIES = new Set([
 
 const FIELD_ALIASES = {
   点位类型: "volunteer_category_raw",
-  "点位类型__row3": "volunteer_category_raw",
-  "点位类型__row6": "category_code_candidate_raw",
+  点位类型__row3: "volunteer_category_raw",
+  点位类型__row6: "category_code_candidate_raw",
   中文名: "name_zh",
   "英文名/英文别称": "name_en",
   "别名/旧名/常⽤名": "alias",
@@ -73,7 +79,7 @@ const decodeXml = (value) =>
     .replaceAll("&lt;", "<")
     .replaceAll("&gt;", ">")
     .replaceAll("&amp;", "&")
-    .replaceAll("&quot;", "\"")
+    .replaceAll("&quot;", '"')
     .replaceAll("&apos;", "'")
     .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
     .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
@@ -203,7 +209,9 @@ export const parseVolunteerWorkbook = (workbookPath = DEFAULT_INPUT) => {
 
   const fieldRows = [];
   const labelCounts = new Map();
-  for (const [rowIndex, values] of [...rows.entries()].sort((a, b) => a[0] - b[0])) {
+  for (const [rowIndex, values] of [...rows.entries()].sort(
+    (a, b) => a[0] - b[0]
+  )) {
     const label = normalizeCellText(values.get(3) ?? "");
     if (!label) {
       continue;
@@ -227,7 +235,8 @@ export const parseVolunteerWorkbook = (workbookPath = DEFAULT_INPUT) => {
 
       for (const field of fieldRows) {
         const value = cell(rows, field.rowIndex, pointColumn.columnIndex);
-        const key = FIELD_ALIASES[field.field_key] ?? FIELD_ALIASES[field.label];
+        const key =
+          FIELD_ALIASES[field.field_key] ?? FIELD_ALIASES[field.label];
         const rawKey = `${field.field_key}__${field.rowIndex}`;
         raw_rows[rawKey] = value;
         if (key) {
@@ -282,7 +291,9 @@ const splitTags = (value) =>
     .filter(Boolean);
 
 const resolveCategory = (record) => {
-  const candidate = normalizeCellText(record.fields.category_code_candidate_raw);
+  const candidate = normalizeCellText(
+    record.fields.category_code_candidate_raw
+  );
   if (INTERNAL_CATEGORIES.has(candidate)) {
     return {
       category: candidate,
@@ -290,7 +301,9 @@ const resolveCategory = (record) => {
     };
   }
 
-  const volunteerCategory = normalizeCellText(record.fields.volunteer_category_raw);
+  const volunteerCategory = normalizeCellText(
+    record.fields.volunteer_category_raw
+  );
   const mapped = VOLUNTEER_CATEGORY_MAP.get(volunteerCategory);
   if (mapped) {
     return {
@@ -356,7 +369,8 @@ export const mapVolunteerRecordsToDraftPlaces = (parseResult) =>
         cover_url: null,
         category_level_1: category,
         category_level_2:
-          normalizeCellText(record.fields.volunteer_category_raw) || "pending-review",
+          normalizeCellText(record.fields.volunteer_category_raw) ||
+          "pending-review",
         tag_ids: tags,
         address_zh: addressZh,
         address_en: "",
@@ -385,7 +399,8 @@ export const mapVolunteerRecordsToDraftPlaces = (parseResult) =>
           volunteer_category_raw:
             normalizeCellText(record.fields.volunteer_category_raw) || null,
           category_code_candidate_raw:
-            normalizeCellText(record.fields.category_code_candidate_raw) || null,
+            normalizeCellText(record.fields.category_code_candidate_raw) ||
+            null,
           raw_fields: Object.fromEntries(
             Object.entries(record.fields).map(([key, value]) => [
               key,
@@ -415,15 +430,18 @@ export const buildVolunteerImport = (workbookPath = DEFAULT_INPUT) => {
     draft_places,
     summary: {
       draft_count: draft_places.length,
-      public_count: draft_places.filter((item) => item.place.status === "published")
-        .length,
+      public_count: draft_places.filter(
+        (item) => item.place.status === "published"
+      ).length,
       records_with_category_blockers: draft_places.filter((item) =>
         item.place.import_review?.review_blockers.some((blocker) =>
           blocker.startsWith("unsupported_category:")
         )
       ).length,
       records_needing_coordinate_review: draft_places.filter((item) =>
-        item.place.import_review?.review_blockers.includes("needs_coordinate_review")
+        item.place.import_review?.review_blockers.includes(
+          "needs_coordinate_review"
+        )
       ).length
     }
   };
@@ -492,17 +510,36 @@ export const postDrafts = async (apiBaseUrl, actorId, draftPlaces) => {
   const results = [];
   for (const item of draftPlaces) {
     const existing = existingBySourceImportId.get(item.source_import_id);
+
+    if (existing && existing.status !== "draft") {
+      results.push({
+        source_import_id: item.source_import_id,
+        action: "skipped",
+        status: 200,
+        success: true,
+        id: existing._id,
+        reason: `existing_import_status:${existing.status}`,
+        error: null
+      });
+      continue;
+    }
+
     const method = existing ? "PATCH" : "POST";
     const path = existing
       ? `${apiBaseUrl}/admin/places/${encodeURIComponent(existing._id)}`
       : `${apiBaseUrl}/admin/places`;
+    const payload = existing
+      ? {
+          import_review: item.place.import_review
+        }
+      : item.place;
     const { response, body } = await requestJson(path, {
       method,
       headers: {
         "content-type": "application/json",
         "x-mock-user-id": actorId
       },
-      body: JSON.stringify(item.place)
+      body: JSON.stringify(payload)
     });
     if (body.success === true && body.data?.import_review?.source_import_id) {
       existingBySourceImportId.set(
@@ -516,6 +553,7 @@ export const postDrafts = async (apiBaseUrl, actorId, draftPlaces) => {
       status: response.status,
       success: body.success === true,
       id: body.data?._id,
+      reason: null,
       error: body.error ?? null
     });
   }
@@ -530,7 +568,11 @@ const main = async () => {
     result.execution = {
       mode: "admin_api",
       api_base_url: args.apiBaseUrl,
-      results: await postDrafts(args.apiBaseUrl, args.actorId, result.draft_places)
+      results: await postDrafts(
+        args.apiBaseUrl,
+        args.actorId,
+        result.draft_places
+      )
     };
   } else {
     result.execution = {
