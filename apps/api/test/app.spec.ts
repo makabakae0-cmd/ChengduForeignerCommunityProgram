@@ -45,7 +45,8 @@ describe("api routes", () => {
         {
           method: "POST",
           headers: {
-            "content-type": "application/json"
+            "content-type": "application/json",
+            "x-mock-user-id": "user_002"
           },
           body: JSON.stringify({
             contact_name: "Jerry",
@@ -138,6 +139,16 @@ describe("api routes", () => {
       expect(recommendedResponse.status).toBe(200);
       expect(recommendedData.data.items.every((item: { is_recommended: boolean }) => item.is_recommended)).toBe(true);
 
+      const taggedResponse = await fetch(`${baseUrl}/places?tag=service`);
+      const taggedData = await taggedResponse.json();
+      expect(taggedResponse.status).toBe(200);
+      expect(
+        taggedData.data.items.every((item: { tag_ids: string[] }) =>
+          item.tag_ids.includes("service")
+        )
+      ).toBe(true);
+      expect(taggedData.data.items[0]).not.toHaveProperty("gallery_media");
+
       const createDraftPlaceResponse = await fetch(`${baseUrl}/admin/places`, {
         method: "POST",
         headers: {
@@ -208,6 +219,31 @@ describe("api routes", () => {
 
       const announcementsResponse = await fetch(`${baseUrl}/announcements`);
       expect(announcementsResponse.status).toBe(200);
+    } finally {
+      await close();
+    }
+  });
+
+  it("serves health and places routes with the CloudBase /api prefix", async () => {
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const healthResponse = await fetch(`${baseUrl}/api/health`);
+      const healthData = await healthResponse.json();
+      expect(healthResponse.status).toBe(200);
+      expect(healthData).toEqual({ ok: true });
+
+      const placesResponse = await fetch(`${baseUrl}/api/places?page=1&pageSize=1`);
+      const placesData = await placesResponse.json();
+      expect(placesResponse.status).toBe(200);
+      expect(placesData.success).toBe(true);
+      expect(placesData.data.items).toHaveLength(1);
+
+      const markersResponse = await fetch(`${baseUrl}/api/places/map-markers`);
+      const markersData = await markersResponse.json();
+      expect(markersResponse.status).toBe(200);
+      expect(markersData.success).toBe(true);
+      expect(markersData.data.length).toBeGreaterThan(0);
     } finally {
       await close();
     }
@@ -506,7 +542,7 @@ describe("api routes", () => {
       expect(keywordData.data.items[0]).not.toHaveProperty("address_zh");
 
       const filteredResponse = await fetch(
-        `${baseUrl}/places?communityId=tongzilin&category=public-service&recommended=true&sort=recommended`
+        `${baseUrl}/places?communityId=tongzilin&category=public-service&tag=service&recommended=true&sort=recommended`
       );
       const filteredData = await filteredResponse.json();
 
@@ -517,11 +553,21 @@ describe("api routes", () => {
         filteredData.data.items.every(
           (item: {
             category_level_1: string;
+            tag_ids: string[];
             is_recommended: boolean;
           }) =>
-            item.category_level_1 === "public-service" && item.is_recommended
+            item.category_level_1 === "public-service" &&
+            item.tag_ids.includes("service") &&
+            item.is_recommended
         )
       ).toBe(true);
+
+      const emptyTagResponse = await fetch(`${baseUrl}/places?tag=missing-tag`);
+      const emptyTagData = await emptyTagResponse.json();
+
+      expect(emptyTagResponse.status).toBe(200);
+      expect(emptyTagData.data.items).toEqual([]);
+      expect(emptyTagData.data.total).toBe(0);
 
       const nameSortResponse = await fetch(`${baseUrl}/places?sort=name`);
       const nameSortData = await nameSortResponse.json();

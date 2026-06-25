@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import type { PlaceMapMarker } from "@community-map/shared";
-import { onLoad } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 
 import { mobileApi } from "@/api/client";
 import AsyncStateCard from "@/components/AsyncStateCard.vue";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
 import { getPlacesCopy } from "./copy";
-import { placesPagePaths } from "./navigation";
+import {
+  buildPlaceMarkerNavigationTarget,
+  openPlaceNativeNavigation,
+  PLACE_MAP_FOCUS_STORAGE_KEY,
+  placesPagePaths
+} from "./navigation";
 import { usePlaceAsyncState } from "./usePlaceAsyncState";
 
 interface RenderedMarker {
@@ -95,6 +100,27 @@ const loadMarkers = async () => {
     null;
 };
 
+const focusPresetPlace = (placeId: string | null) => {
+  if (!placeId) {
+    return;
+  }
+
+  presetPlaceId.value = placeId;
+  selectedPlaceId.value =
+    places.value.find((place) => place._id === placeId)?._id ?? null;
+};
+
+const consumePendingFocusPlace = () => {
+  const pendingPlaceId = uni.getStorageSync?.(PLACE_MAP_FOCUS_STORAGE_KEY);
+
+  if (typeof pendingPlaceId !== "string" || pendingPlaceId.length === 0) {
+    return;
+  }
+
+  uni.removeStorageSync?.(PLACE_MAP_FOCUS_STORAGE_KEY);
+  focusPresetPlace(pendingPlaceId);
+};
+
 const handleMarkerTap = (event: { detail?: { markerId?: number } }) => {
   const markerId = event.detail?.markerId;
   if (markerId === undefined) {
@@ -117,6 +143,20 @@ const openDetail = () => {
   });
 };
 
+const openNavigation = () => {
+  if (!selectedPlace.value) {
+    return;
+  }
+
+  openPlaceNativeNavigation(
+    buildPlaceMarkerNavigationTarget(selectedPlace.value, state.locale),
+    {
+      unavailable: mapCopy.value.navigationUnavailable,
+      failed: mapCopy.value.navigationFailed
+    }
+  );
+};
+
 const openList = (recommended = false) => {
   uni.navigateTo({
     url: recommended ? placesPagePaths.recommended() : placesPagePaths.list()
@@ -125,18 +165,24 @@ const openList = (recommended = false) => {
 
 onMounted(loadMarkers);
 
+onShow(consumePendingFocusPlace);
+
 onLoad((query) => {
-  presetPlaceId.value = query?.id ? String(query.id) : null;
+  focusPresetPlace(query?.id ? String(query.id) : null);
 });
 </script>
 
 <template>
   <view class="page">
-    <view class="title">{{ mapCopy.title }}</view>
-    <view class="subtitle">{{ mapCopy.subtitle }}</view>
+    <view class="page-title">{{ mapCopy.title }}</view>
+    <view class="page-subtitle">{{ mapCopy.subtitle }}</view>
     <view class="action-row">
-      <button class="secondary" @click="openList(false)">{{ mapCopy.openList }}</button>
-      <button class="secondary" @click="openList(true)">{{ mapCopy.openRecommended }}</button>
+      <button class="place-action secondary" @click="openList(false)">
+        {{ mapCopy.openList }}
+      </button>
+      <button class="place-action secondary" @click="openList(true)">
+        {{ mapCopy.openRecommended }}
+      </button>
     </view>
 
     <map
@@ -162,10 +208,17 @@ onLoad((query) => {
         }}
       </view>
       <view class="summary-meta">{{ selectedPlace.category_level_1 }}</view>
-      <view v-if="selectedPlace.is_recommended" class="pill">
+      <view v-if="selectedPlace.is_recommended" class="place-badge">
         {{ mapCopy.recommendedBadge }}
       </view>
-      <button class="primary" @click="openDetail">{{ mapCopy.openDetail }}</button>
+      <view class="summary-actions">
+        <button class="place-action primary" @click="openDetail">
+          {{ mapCopy.openDetail }}
+        </button>
+        <button class="place-action secondary" @click="openNavigation">
+          {{ mapCopy.openNavigation }}
+        </button>
+      </view>
     </view>
     <AsyncStateCard v-else variant="empty" :text="mapCopy.empty" />
   </view>
@@ -178,12 +231,12 @@ onLoad((query) => {
   min-height: 100vh;
 }
 
-.title {
+.page-title {
   font-size: 36rpx;
   font-weight: 700;
 }
 
-.subtitle {
+.page-subtitle {
   color: #6b7280;
   margin-top: 12rpx;
   margin-bottom: 24rpx;
@@ -202,11 +255,21 @@ onLoad((query) => {
   display: flex;
   gap: 16rpx;
   margin-bottom: 20rpx;
+  flex-wrap: wrap;
+}
+
+.place-action {
+  min-width: 220rpx;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+}
+
+.primary {
+  background: #0052d9;
+  color: #ffffff;
 }
 
 .secondary {
-  flex: 1;
-  border-radius: 8rpx;
   background: #e6f4ff;
   color: #0052d9;
 }
@@ -229,7 +292,7 @@ onLoad((query) => {
   color: #64748b;
 }
 
-.pill {
+.place-badge {
   display: inline-flex;
   margin-top: 14rpx;
   padding: 6rpx 14rpx;
@@ -239,10 +302,10 @@ onLoad((query) => {
   font-size: 22rpx;
 }
 
-.primary {
+.summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
   margin-top: 24rpx;
-  border-radius: 8rpx;
-  background: #0052d9;
-  color: #ffffff;
 }
 </style>

@@ -106,7 +106,7 @@ describe("cloudbase event handler", () => {
         {
           eventID: "req_cloud_002",
           httpContext: {
-            url: "http://localhost/places?communityId=tongzilin&keyword=community&category=public-service&recommended=true&sort=recommended&page=1&pageSize=1",
+            url: "http://localhost/places?communityId=tongzilin&keyword=community&category=public-service&tag=service&recommended=true&sort=recommended&page=1&pageSize=1",
             httpMethod: "GET"
           }
         } as any
@@ -120,8 +120,14 @@ describe("cloudbase event handler", () => {
       expect(listBody.data.total).toBe(1);
       expect(
         listBody.data.items.every(
-          (item: { category_level_1: string; is_recommended: boolean }) =>
-            item.category_level_1 === "public-service" && item.is_recommended
+          (item: {
+            category_level_1: string;
+            tag_ids: string[];
+            is_recommended: boolean;
+          }) =>
+            item.category_level_1 === "public-service" &&
+            item.tag_ids.includes("service") &&
+            item.is_recommended
         )
       ).toBe(true);
       expect(listBody.data.items[0]).not.toHaveProperty("gallery_urls");
@@ -195,9 +201,61 @@ describe("cloudbase event handler", () => {
 
       expect(invalidSortResponse.statusCode).toBe(400);
       expect(invalidSortBody.error.code).toBe("VALIDATION_ERROR");
+
+      const emptyTagResponse = await main(
+        {},
+        {
+          eventID: "req_cloud_004_empty_tag",
+          httpContext: {
+            url: "http://localhost/places?tag=missing-tag",
+            httpMethod: "GET"
+          }
+        } as any
+      );
+      const emptyTagBody = emptyTagResponse.body as any;
+
+      expect(emptyTagResponse.statusCode).toBe(200);
+      expect(emptyTagBody.data.items).toEqual([]);
+      expect(emptyTagBody.data.total).toBe(0);
     } finally {
       delete process.env.API_PROVIDER;
     }
+  });
+
+  it("normalizes the /api prefix in the cloudbase compatibility handler", async () => {
+    const health = await main(
+      {},
+      {
+        eventID: "req_api_health",
+        httpContext: {
+          url: "http://localhost/api/health",
+          httpMethod: "GET"
+        }
+      } as any
+    );
+    const healthBody = health.body as any;
+
+    expect(health.statusCode).toBe(200);
+    expect(healthBody.success).toBe(true);
+    expect(healthBody.data).toEqual({ ok: true });
+    expect(healthBody.requestId).toBe("req_api_health");
+
+    const places = await main(
+      {},
+      {
+        eventID: "req_api_places",
+        httpContext: {
+          url: "http://localhost/api/places?page=1&pageSize=1",
+          httpMethod: "GET"
+        }
+      } as any
+    );
+    const placesBody = places.body as any;
+
+    expect(places.statusCode).toBe(200);
+    expect(placesBody.success).toBe(true);
+    expect(placesBody.requestId).toBe("req_api_places");
+    expect(placesBody.data.items).toHaveLength(1);
   });
 
   it("keeps places query semantics aligned between mock and cloudbase providers", async () => {
@@ -207,6 +265,7 @@ describe("cloudbase event handler", () => {
     const query = {
       communityId: "tongzilin",
       category: "public-service",
+      tag: "service",
       page: 1,
       pageSize: 1,
       recommended: true,
@@ -226,7 +285,9 @@ describe("cloudbase event handler", () => {
     expect(cloudbaseList.pageSize).toBe(1);
     expect(
       cloudbaseList.items.every(
-        (item) => item.category_level_1 === "public-service"
+        (item) =>
+          item.category_level_1 === "public-service" &&
+          item.tag_ids.includes("service")
       )
     ).toBe(true);
 
@@ -440,6 +501,97 @@ describe("cloudbase event handler", () => {
       ).toBe(true);
     } finally {
       delete process.env.API_PROVIDER;
+    }
+  });
+
+  it("omits _id from live CloudBase create set payload", async () => {
+    const previousProviderMode = process.env.CLOUDBASE_PROVIDER_MODE;
+    const previousEnvId = process.env.CLOUDBASE_ENV_ID;
+    const set = vi.fn(async (payload: Record<string, unknown>) => {
+      void payload;
+      return {
+        updated: 0,
+        upsertedId: "place_created",
+        requestId: "req_live_set"
+      };
+    });
+    const doc = vi.fn(() => ({ set }));
+    const placesCollection = {
+      limit: vi.fn(() => ({
+        get: vi.fn(async () => ({
+          data: []
+        }))
+      })),
+      doc
+    };
+    const initCloudbase = vi.fn(() => ({
+      database: () => ({
+        collection: () => placesCollection
+      }),
+      getTempFileURL: vi.fn()
+    }));
+
+    try {
+      vi.resetModules();
+      vi.doMock("@cloudbase/node-sdk", () => ({
+        default: {
+          init: initCloudbase
+        }
+      }));
+      process.env.CLOUDBASE_PROVIDER_MODE = "live";
+      process.env.CLOUDBASE_ENV_ID = "test-env";
+
+      const { createCloudbaseProvider: createLiveProvider } = await import(
+        "../src/providers/cloudbase"
+      );
+      const provider = createLiveProvider();
+      const created = await provider.places.create({
+        name_zh: "实时创建地点",
+        name_en: "Live Create Place",
+        category_level_1: "community",
+        category_level_2: "acceptance",
+        tag_ids: ["acceptance"],
+        address_zh: "成都",
+        address_en: "Chengdu",
+        location: { latitude: 30.615, longitude: 104.066 },
+        business_hours_zh: "周一至周日",
+        business_hours_en: "Every day",
+        intro_zh: "写入测试",
+        intro_en: "Create test",
+        recommended_reason_zh: null,
+        recommended_reason_en: null,
+        is_recommended: false,
+        recommended_rank: 0,
+        gallery_file_ids: [],
+        gallery_urls: [],
+        tencent_map_poi_id: null,
+        supports_navigation: true,
+        supports_favorite: true,
+        supports_share: true,
+        status: "draft"
+      });
+      const setPayload = set.mock.calls[0]?.[0] as Record<string, unknown>;
+
+      expect(doc).toHaveBeenCalledWith(created._id);
+      expect(set).toHaveBeenCalledTimes(1);
+      expect(setPayload).not.toHaveProperty("_id");
+      expect(setPayload.name_en).toBe("Live Create Place");
+      expect(created._id).toMatch(/^place_/);
+    } finally {
+      if (previousProviderMode === undefined) {
+        delete process.env.CLOUDBASE_PROVIDER_MODE;
+      } else {
+        process.env.CLOUDBASE_PROVIDER_MODE = previousProviderMode;
+      }
+
+      if (previousEnvId === undefined) {
+        delete process.env.CLOUDBASE_ENV_ID;
+      } else {
+        process.env.CLOUDBASE_ENV_ID = previousEnvId;
+      }
+
+      vi.doUnmock("@cloudbase/node-sdk");
+      vi.resetModules();
     }
   });
 
