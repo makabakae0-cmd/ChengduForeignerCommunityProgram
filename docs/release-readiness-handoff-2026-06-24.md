@@ -49,10 +49,10 @@ No production data was mutated by this handoff.
 | Imported volunteer places | 19 dev records, all `status="draft"` | Preserve as review fixtures; do not treat as production data |
 | Published acceptance place | `CloudBase Live Acceptance Place`, id `place_0dc2aece-6aa6-46c5-8971-57646636a22a` | Preserve as dev smoke fixture |
 | Draft visibility fixture | `place_d6af35be-acea-41b8-92ed-cfd0fa909072` | Preserve as draft public-denial evidence |
-| Incomplete gallery/media references | Published acceptance place has `gallery_file_ids: []`; no real `cloud://` gallery file id is attached | P0 blocker for gallery media live acceptance |
+| Gallery/media reference | Published acceptance place has a real CloudBase `gallery_file_ids` entry under `public/places/place_0dc2aece-6aa6-46c5-8971-57646636a22a/` | Dev gallery media live acceptance passed on 2026-06-25 |
 | Invalid/missing coordinate imports | Imported draft records may include placeholder out-of-range coordinates for schema validity | Preserve in draft; map marker filtering must continue excluding them |
 | Duplicate/test records | No deletion performed in this run | Review before production seed creation |
-| CloudBase `file_assets` live data | No accepted real gallery media evidence | Do not claim files live provider readiness |
+| CloudBase `file_assets` live data | Gallery acceptance used real CloudBase storage file id via places `gallery_file_ids`; standalone files live provider remains incomplete | Do not claim full files provider readiness |
 
 ## Live/Fallback Boundaries
 
@@ -65,7 +65,6 @@ No production data was mutated by this handoff.
 
 | Priority | Blocker | Owner | Next action / window | Can 6.24 integration proceed around it? |
 | --- | --- | --- | --- | --- |
-| P0 | Real CloudBase gallery media/temp URL not accepted | CloudBase/files owner | Attach real `cloud://` file id under `public/places/{place_id}/` and verify `gallery_media`/`gallery_urls` | Places without gallery can proceed; gallery release gate cannot |
 | P0 | Production env/security rules not configured | release owner | Create/confirm prod env and apply DB/storage rules before production release | Dev integration can proceed; production release cannot |
 | P1 | `operation_logs` and production-grade log workflow incomplete | API/ops owner | Define write path and runbook for key business operations | Smoke can proceed with requestId/function logs |
 

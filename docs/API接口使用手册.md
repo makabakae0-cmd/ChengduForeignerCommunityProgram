@@ -19,7 +19,7 @@
   - 6.19-6.21 local/API readiness 已覆盖 events、discover、files、notifications、auth/role 的关键负路径和 CloudBase handler fallback parity。
 - 未完善 / 不应宣称线上完成：
   - 非 places CloudBase live providers 尚未完成。
-  - CloudBase dev places live acceptance 已完成非图集闭环；gallery media 和非 places live providers 尚未完成。
+  - CloudBase dev places live acceptance 已覆盖 public list、map、detail、admin update、draft visibility 和真实 storage gallery media temp URL；非 places live providers 尚未完成。
   - 线上 `/api` route、prod env、生产数据库权限规则尚未完成验收。
   - CloudBase MCP 未重新登录和 live smoke test 前，不能把微信云数据库标记为“已验证可连接”。
 

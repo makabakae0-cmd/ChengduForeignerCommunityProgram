@@ -101,9 +101,9 @@
 
 ### 状态边界 / 不得过度标记
 
-- CloudBase dev places gallery media live acceptance 尚未完成：
-  - 需要真实 CloudBase storage file id 挂接到 `public/places/{place_id}/`
-  - 需要 detail 返回由 `gallery_file_ids` 解析出的 `gallery_media` 和派生 `gallery_urls`
+- CloudBase dev places gallery media live acceptance 已完成：
+  - 2026-06-25 已将真实 CloudBase storage file id 挂接到 published acceptance place。
+  - public detail 已返回由 `gallery_file_ids` 解析出的 1 条 `gallery_media` 和 1 条派生 `gallery_urls` temp URL。
 - 微信开发者工具导入和主流程已验证：
   - DevTools service port `50375` 已开启；CLI 成功打开小程序构建目录并生成预览码；home、events、discover、places 主入口在模拟器可达。
 - 真机 places map/navigation/share 已完成 release-readiness 验证：
@@ -146,17 +146,16 @@
   - 6.23 接口/配置冻结、数据清理分类、6.24 联调入口输出已记录在 `docs/release-readiness-handoff-2026-06-24.md`；`typecheck` / `test` / `lint` 均已通过。
   - 6.24 已完成 CloudBase dev HTTP smoke 的一部分：`/health`、places list/map/detail、events list/detail、discover feed/detail、`auth/me` 均返回 200；events/discover/auth 仍按非 places fallback 边界处理，不等同于 live persistence；files public/temp URL 尚未完成。
 - 已完成的主要阶段：Places 本地前后台链路、CloudBase dev API HTTP function、`/api` route、places public read/admin update/draft visibility、events/discover/files/notifications/auth 本地/API 负路径。
-- 仍阻塞上线闭环的 P0：真实 CloudBase gallery media/file id、files public/temp URL live 验收、prod env、数据库/存储安全规则、非 places live provider persistence。
+- 仍阻塞上线闭环的 P0：prod env、数据库/存储安全规则、非 places live provider persistence；CloudBase dev places gallery media/file id 验收已完成。
 - 进度评估：功能开发主体约完成到“可进入全模块联调”，上线准备约完成到“dev API 与本地业务基线可用”；距离 7.1 口径还剩联调、真机、真实媒体、生产配置、安全规则和发布交接。
 
 ## 2. 剩余上线任务
 
 ### 下一步执行顺序
 
-1. 跑通真实 CloudBase storage/files live flow：上传或确认 `public/places/{place_id}/` 下真实 `cloud://` file id，完成 places detail `gallery_media` / `gallery_urls` temp URL 验收。
-2. 补齐 6.24 API smoke 剩余项：files public/temp URL、operation_logs/生产级日志入口，并继续记录 requestId / logs / live-vs-fallback 边界。
-3. 按 6.25-6.28 顺序完成 Places、Events、Discover、Files/Auth/Notifications 全链路联调；只修 P0/P1 缺陷。
-4. 补齐发布项：腾讯地图 key 配置、prod env、安全规则、回滚方案和已知限制。
+1. 补齐 6.24 API smoke 剩余项：operation_logs/生产级日志入口，并继续记录 requestId / logs / live-vs-fallback 边界。
+2. 按 6.25-6.28 顺序完成 Places、Events、Discover、Files/Auth/Notifications 全链路联调；只修 P0/P1 缺陷。
+3. 补齐发布项：腾讯地图 key 配置、prod env、安全规则、回滚方案和已知限制。
 
 ### P0: CloudBase 与部署阻塞项
 
@@ -170,8 +169,8 @@
   - 验收：只在函数验证成功后执行；dev access domain 可访问 `/api/health` 或等价 health route。
 - [x] 配置并验证 CloudBase dev API 环境变量。
   - 验收：`API_PROVIDER=cloudbase`、`CLOUDBASE_PROVIDER_MODE=live`、env id 生效，places 读写不再回退 mock。
-- [ ] 跑通 CloudBase dev places live acceptance。
-  - 当前状态：public list / map / detail / admin create-update / draft visibility / published update 已通过；gallery media temp URL 因缺少真实 CloudBase file id 仍 blocked。
+- [x] 跑通 CloudBase dev places live acceptance。
+  - 当前状态：public list / map / detail / admin create-update / draft visibility / published update 已通过；2026-06-25 已挂接真实 CloudBase storage file id，并验证 gallery media temp URL。
 - [ ] 创建或确认 CloudBase prod 环境。
   - 验收：region 与 dev 对齐；发布准备完成前不写入生产业务数据。
 - [ ] 制定并应用数据库安全规则。
@@ -362,11 +361,11 @@
 - [x] 本地 `pnpm typecheck` 通过。
 - [x] 本地 `pnpm test` 通过，11 个测试文件 / 51 个测试通过。
 - [x] CloudBase dev `/api/health` 现场 HTTP smoke 返回 200。
-- [x] CloudBase dev places list/map/detail 现场 HTTP smoke 返回 200；detail `gallery_media=0`、`gallery_urls=0`。
+- [x] CloudBase dev places list/map/detail 现场 HTTP smoke 返回 200；2026-06-25 detail `gallery_media=1`、`gallery_urls=1`，真实 CloudBase temp URL 可访问。
 - [x] CloudBase dev events list/detail 现场 HTTP smoke 返回 200；仍视为 CloudBase handler fallback，不视为 live persistence。
 - [x] CloudBase dev discover feed/detail 现场 HTTP smoke 返回 200；仍视为 CloudBase handler fallback，不视为 live persistence。
 - [x] CloudBase dev `auth/me` 现场 HTTP smoke 返回 200；仍视为 mock actor/fallback 认证边界，不视为生产认证。
-- [ ] CloudBase dev files public URL 或 temp URL 未完成；真实 gallery media temp URL 仍 blocked。
+- [x] CloudBase dev places gallery media temp URL 已完成；真实 storage file id 已挂接到 published acceptance place。
 - [ ] CloudBase 日志可查有函数日志证据，但 `operation_logs` 写入和生产级日志排查入口尚未完成。
 
 退出标准：

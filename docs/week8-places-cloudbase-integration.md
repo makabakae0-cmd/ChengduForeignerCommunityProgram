@@ -73,7 +73,7 @@ Live places acceptance status:
 - Public list, map marker, and detail all return the published live place without exposing `import_review`.
 - Draft visibility denial passed with draft `place_d6af35be-acea-41b8-92ed-cfd0fa909072`: absent from public list/markers and public detail returns 404.
 - Admin update visibility passed; public fields reflected update timestamp `2026-06-23T15:29:05Z`.
-- CloudBase gallery media remains blocked, not accepted: no real `cloud://` gallery file id is attached, and current file upload/complete behavior is not yet a live CloudBase files provider.
+- CloudBase gallery media live acceptance passed on 2026-06-25: a real storage object under `public/places/place_0dc2aece-6aa6-46c5-8971-57646636a22a/` is attached to the published acceptance place, and public detail returns 1 `gallery_media` item plus 1 derived `gallery_urls` temp URL.
 - Current dev `places` count after cleanup is 20: 19 imported drafts + 1 published acceptance place.
 
 Detailed deployment evidence is recorded in `docs/cloudbase-dev-api-deployment.md`.

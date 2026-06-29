@@ -188,10 +188,15 @@ Live data and API acceptance:
 
 Gallery media result:
 
-- Blocked, not accepted.
-- The published acceptance place has `gallery_file_ids: []`.
-- No real CloudBase storage file id is available under `public/places/{place_id}/`.
-- Current non-places/files provider behavior still falls back to mock for file upload/complete, so hardcoded URLs or mock file flow must not be counted as CloudBase gallery acceptance.
+- Accepted on 2026-06-25 in dev.
+- Uploaded real CloudBase storage object:
+  `public/places/place_0dc2aece-6aa6-46c5-8971-57646636a22a/live-gallery-acceptance.png`.
+- Attached file id to the published acceptance place:
+  `cloud://cloud1-d7gxdk8t43bd639c0.636c-cloud1-d7gxdk8t43bd639c0-1441004938/public/places/place_0dc2aece-6aa6-46c5-8971-57646636a22a/live-gallery-acceptance.png`.
+- Admin API PATCH succeeded with gateway request ID `0ebbb443-19a4-49db-89f4-43d83d8d18d6`.
+- Public detail returned `gallery_media.length=1`, `gallery_urls.length=1`, matching derived temp URL, and no `import_review` field. Detail gateway request ID: `58f17990-1bec-4aad-903e-57507370e80a`.
+- The resolved temp URL returned `HEAD 200`, `content-type=image/png`, `content-length=70`.
+- Boundary: this proves live places detail can resolve real CloudBase storage gallery file ids. It does not complete a production files provider or non-places live persistence.
 
 Validation evidence is append-only under:
 
@@ -201,6 +206,5 @@ auto_test_openspec/complete-cloudbase-dev-places-live-acceptance/
 
 ## Remaining Work
 
-- Verify gallery media temporary URL behavior with real CloudBase file IDs.
 - Complete non-places live providers for events, discover, comments, announcements, notifications, auth, and files.
 - Decide final production auth/security rules before any production exposure.
