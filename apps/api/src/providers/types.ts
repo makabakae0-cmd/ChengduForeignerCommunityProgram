@@ -9,6 +9,7 @@ import type {
   Notification,
   PageResult,
   Place,
+  DeletePlaceResponse,
   PlaceDetail,
   PlaceListItem,
   PlaceMapMarker,
@@ -95,6 +96,7 @@ export interface ApiProvider {
     mapMarkers(): Promise<PlaceMapMarker[]>;
     create(input: Partial<Place>): Promise<Place>;
     update(id: string, input: Partial<Place>): Promise<Place | null>;
+    delete(id: string): Promise<DeletePlaceResponse | null>;
   };
   announcements: {
     list(input: {

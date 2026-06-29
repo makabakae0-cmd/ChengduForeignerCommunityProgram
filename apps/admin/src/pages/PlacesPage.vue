@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import {
   CreatePlaceInputSchema,
   PLACE_STATUSES,
@@ -16,6 +16,7 @@ const places = ref<Place[]>([]);
 const saving = ref(false);
 const registeringGallery = ref(false);
 const editingId = ref<string | null>(null);
+const deletingId = ref<string | null>(null);
 const submittingError = ref("");
 
 const categoryOptions = PLACE_TOP_LEVEL_CATEGORIES.map((value) => ({
@@ -245,6 +246,35 @@ const quickPublish = async (place: Place, status: Place["status"]) => {
   await load();
 };
 
+const deletePlace = async (place: Place) => {
+  try {
+    await ElMessageBox.confirm(
+      `删除后「${place.name_zh}」会从后台列表和前台地点中移除，且不能在当前后台撤销。`,
+      "删除地点",
+      {
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        type: "warning",
+        confirmButtonClass: "el-button--danger"
+      }
+    );
+  } catch {
+    return;
+  }
+
+  deletingId.value = place._id;
+  try {
+    await adminApi.admin.deletePlace(place._id);
+    if (editingId.value === place._id) {
+      fillForm();
+    }
+    ElMessage.success("地点已删除。");
+    await load();
+  } finally {
+    deletingId.value = null;
+  }
+};
+
 const removeGalleryFile = (fileId: string) => {
   form.gallery_file_ids = form.gallery_file_ids.filter(
     (item) => item !== fileId
@@ -443,7 +473,7 @@ onMounted(async () => {
         </div>
       </div>
     </div>
-    <el-table :data="places" v-loading="loading">
+    <el-table :data="places" v-loading="loading" class="places-table">
       <el-table-column prop="name_zh" label="中文名" min-width="180" />
       <el-table-column prop="name_en" label="英文名" min-width="180" />
       <el-table-column prop="category_level_1" label="一级分类" width="140" />
@@ -471,19 +501,33 @@ onMounted(async () => {
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="120" />
-      <el-table-column label="操作" width="280">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="startEdit(row)"
-            >编辑</el-button
-          >
-          <el-button
-            link
-            type="success"
-            @click="quickPublish(row, 'published')"
-          >
-            发布
-          </el-button>
-          <el-button link @click="quickPublish(row, 'draft')">转草稿</el-button>
+          <div class="place-row-actions">
+            <el-button link size="small" type="primary" @click="startEdit(row)">
+              编辑
+            </el-button>
+            <el-button
+              link
+              size="small"
+              type="success"
+              @click="quickPublish(row, 'published')"
+            >
+              发布
+            </el-button>
+            <el-button link size="small" @click="quickPublish(row, 'draft')">
+              转草稿
+            </el-button>
+            <el-button
+              link
+              size="small"
+              type="danger"
+              :loading="deletingId === row._id"
+              @click="deletePlace(row)"
+            >
+              删除
+            </el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -565,5 +609,16 @@ onMounted(async () => {
   margin-top: 6px;
   color: #6b7280;
   font-size: 12px;
+}
+
+.places-table {
+  width: 100%;
+}
+
+.place-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
 }
 </style>

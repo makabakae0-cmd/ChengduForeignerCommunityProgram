@@ -19,7 +19,7 @@ export const corsMiddleware = async (ctx: Context, next: Next) => {
   if (!managedCors) {
     ctx.set("Access-Control-Allow-Origin", ctx.get("origin") || "*");
     ctx.set("Vary", "Origin");
-    ctx.set("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS");
+    ctx.set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
     ctx.set(
       "Access-Control-Allow-Headers",
       "content-type,x-mock-user-id,x-requested-with"

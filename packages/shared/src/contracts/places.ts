@@ -3,6 +3,7 @@ import { z } from "zod";
 import { defineContract } from "./define-contract";
 import {
   CreatePlaceInputSchema,
+  DeletePlaceResponseSchema,
   PlaceDetailSchema,
   PlaceListItemSchema,
   PlaceListQuerySchema,
@@ -44,5 +45,10 @@ export const placeContracts = {
     path: "/admin/places/:id",
     request: UpdatePlaceInputSchema,
     response: PlaceSchema
+  }),
+  adminDelete: defineContract({
+    method: "DELETE",
+    path: "/admin/places/:id",
+    response: DeletePlaceResponseSchema
   })
 };

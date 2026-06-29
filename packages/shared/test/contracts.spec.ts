@@ -1,6 +1,8 @@
 import {
   API_ERROR_CODES,
+  apiPaths,
   CreateApiSuccessSchema,
+  DeletePlaceResponseSchema,
   EVENT_REGISTRATION_STATUSES,
   FILE_PATH_RULES,
   FileAssetSchema,
@@ -11,7 +13,9 @@ import {
   PlaceListQuerySchema,
   PlaceMapMarkerSchema,
   PlaceSchema,
+  placeContracts,
   PostSchema,
+  UpdatePlaceInputSchema,
   UserSchema
 } from "@community-map/shared";
 import { describe, expect, it } from "vitest";
@@ -94,7 +98,9 @@ describe("shared contracts", () => {
           alt_en: "Tongzilin Community Center gallery 1"
         }
       ],
-      gallery_urls: ["https://images.unsplash.com/photo-1494526585095-c41746248156"],
+      gallery_urls: [
+        "https://images.unsplash.com/photo-1494526585095-c41746248156"
+      ],
       is_recommended: true,
       recommended_reason_zh: "推荐理由",
       recommended_reason_en: "Reason",
@@ -166,6 +172,79 @@ describe("shared contracts", () => {
       communityId: "tongzilin",
       sort: "recommended"
     });
+  });
+
+  it("exposes admin place update and delete contracts through shared paths", () => {
+    const deleteEnvelope = CreateApiSuccessSchema(
+      DeletePlaceResponseSchema
+    ).parse({
+      success: true,
+      requestId: "req_delete_place",
+      data: {
+        deleted_id: "place_001"
+      }
+    });
+
+    expect(placeContracts.adminUpdate).toMatchObject({
+      method: "PATCH",
+      path: "/admin/places/:id"
+    });
+    expect(placeContracts.adminDelete).toMatchObject({
+      method: "DELETE",
+      path: "/admin/places/:id"
+    });
+    expect(apiPaths.admin.updatePlace("place_001")).toBe(
+      "/admin/places/place_001"
+    );
+    expect(apiPaths.admin.deletePlace("place_001")).toBe(
+      "/admin/places/place_001"
+    );
+    expect(deleteEnvelope.data.deleted_id).toBe("place_001");
+  });
+
+  it("keeps admin place updates partial and rejects invalid editable fields", () => {
+    const update = UpdatePlaceInputSchema.parse({
+      name_en: "Edited Place",
+      cover_url: null,
+      gallery_file_ids: [],
+      recommended_reason_en: null
+    });
+
+    expect(update).toEqual({
+      name_en: "Edited Place",
+      cover_url: null,
+      gallery_file_ids: [],
+      recommended_reason_en: null
+    });
+    expect(update).not.toHaveProperty("name_zh");
+    expect(update).not.toHaveProperty("_id");
+    expect(apiPaths.admin.updatePlace("place_001")).toBe(
+      "/admin/places/place_001"
+    );
+
+    expect(() =>
+      UpdatePlaceInputSchema.parse({
+        category_level_1: "service"
+      })
+    ).toThrow();
+    expect(() =>
+      UpdatePlaceInputSchema.parse({
+        status: "deleted"
+      })
+    ).toThrow();
+    expect(() =>
+      UpdatePlaceInputSchema.parse({
+        cover_url: "not-a-url"
+      })
+    ).toThrow();
+    expect(() =>
+      UpdatePlaceInputSchema.parse({
+        location: {
+          latitude: "30.6",
+          longitude: 104.0
+        }
+      })
+    ).toThrow();
   });
 
   it("keeps places list items limited to card browsing fields", () => {

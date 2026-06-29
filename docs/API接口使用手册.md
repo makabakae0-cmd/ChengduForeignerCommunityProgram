@@ -1,6 +1,6 @@
 # API 接口使用手册
 
-更新时间：2026-06-24
+更新时间：2026-06-29
 适用对象：Mobile、小程序、Admin、events、discover、places、files、notifications 等模块开发者
 事实来源：`packages/shared/src/contracts/*`、`packages/shared/src/schemas/*`、`apps/api/src/routes/*`、`docs/已实现API接口清单.md`
 
@@ -11,7 +11,7 @@
 - 已完善：
   - 本地 Koa HTTP route 注册完整。
   - Shared contract / schema 覆盖当前已实现接口。
-  - Places 主链路已覆盖 list、map markers、detail、admin list/create/update、gallery metadata、志愿者导入草稿边界。
+  - Places 主链路已覆盖 list、map markers、detail、admin list/create/update/delete、gallery metadata、志愿者导入草稿边界。
   - Events 基础闭环已覆盖 list、detail、registration、ticket、admin create/update/review/checkin。
   - Discover 基础闭环已覆盖 feed、detail、create、comment、report、admin moderation。
   - Files 基础流已覆盖 upload request、complete、private url。
@@ -19,7 +19,7 @@
   - 6.19-6.21 local/API readiness 已覆盖 events、discover、files、notifications、auth/role 的关键负路径和 CloudBase handler fallback parity。
 - 未完善 / 不应宣称线上完成：
   - 非 places CloudBase live providers 尚未完成。
-  - CloudBase dev places live acceptance 已覆盖 public list、map、detail、admin update、draft visibility 和真实 storage gallery media temp URL；非 places live providers 尚未完成。
+  - CloudBase dev places live acceptance 已覆盖 public list、map、detail、admin update/delete、draft visibility 和真实 storage gallery media temp URL；非 places live providers 尚未完成。
   - 线上 `/api` route、prod env、生产数据库权限规则尚未完成验收。
   - CloudBase MCP 未重新登录和 live smoke test 前，不能把微信云数据库标记为“已验证可连接”。
 
@@ -89,13 +89,13 @@ content-type: application/json
 
 常见错误：
 
-| HTTP 状态 | code | 含义 |
-| --- | --- | --- |
-| `400` | `VALIDATION_ERROR` | 请求 query/body 不符合 schema |
-| `401` | `UNAUTHORIZED` | 未登录或 actor 无法解析 |
-| `403` | `FORBIDDEN` | 权限不足 |
-| `404` | `NOT_FOUND` | 资源不存在或不可见 |
-| `409` | `CONFLICT` | 重复报名、容量满、报名关闭、票据状态冲突等业务冲突 |
+| HTTP 状态 | code               | 含义                                               |
+| --------- | ------------------ | -------------------------------------------------- |
+| `400`     | `VALIDATION_ERROR` | 请求 query/body 不符合 schema                      |
+| `401`     | `UNAUTHORIZED`     | 未登录或 actor 无法解析                            |
+| `403`     | `FORBIDDEN`        | 权限不足                                           |
+| `404`     | `NOT_FOUND`        | 资源不存在或不可见                                 |
+| `409`     | `CONFLICT`         | 重复报名、容量满、报名关闭、票据状态冲突等业务冲突 |
 
 ### 2.4 管理端权限
 
@@ -120,11 +120,11 @@ Protected file paths / business types:
 
 ### 2.5 运行模式
 
-| 模式 | 说明 |
-| --- | --- |
-| `mock` | 默认模式，主要用于本地开发；数据在 mock service 中。 |
-| `http` | 前端通过 HTTP 访问本地 Koa API。 |
-| `cloudbase-function` | 小程序通过 `wx.cloud.callHTTPFunction` 或 fallback cloud function 调用 API。 |
+| 模式                    | 说明                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `mock`                  | 默认模式，主要用于本地开发；数据在 mock service 中。                                                                          |
+| `http`                  | 前端通过 HTTP 访问本地 Koa API。                                                                                              |
+| `cloudbase-function`    | 小程序通过 `wx.cloud.callHTTPFunction` 或 fallback cloud function 调用 API。                                                  |
 | CloudBase live provider | 当前只覆盖 places live 路径；需要 `API_PROVIDER=cloudbase`、`CLOUDBASE_PROVIDER_MODE=live`、`CLOUDBASE_ENV_ID` 或 `TCB_ENV`。 |
 
 注意：events、discover、comments、files、notifications、auth/role 当前只完成 local/API readiness 和 CloudBase handler fallback parity；非 places live provider persistence 尚未验收。
@@ -168,12 +168,12 @@ pnpm --filter @community-map/mobile dev:mp-weixin
 
 Query：
 
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `page` | number | `1` | 从 1 开始 |
-| `pageSize` | number | `10` | 最大 50 |
+| 字段          | 类型   | 默认值      | 说明         |
+| ------------- | ------ | ----------- | ------------ |
+| `page`        | number | `1`         | 从 1 开始    |
+| `pageSize`    | number | `10`        | 最大 50      |
 | `communityId` | string | `tongzilin` | 当前默认社区 |
-| `keyword` | string | optional | 关键词 |
+| `keyword`     | string | optional    | 关键词       |
 
 分页响应：
 
@@ -197,11 +197,11 @@ Query：
 
 ### 4.3 语言和权限
 
-| 类型 | 当前值 |
-| --- | --- |
-| locale | `zh`, `en` |
-| role_flags | `community_admin`, `system_admin` 等，详见 shared enums |
-| file visibility | `public`, `private` |
+| 类型            | 当前值                                                  |
+| --------------- | ------------------------------------------------------- |
+| locale          | `zh`, `en`                                              |
+| role_flags      | `community_admin`, `system_admin` 等，详见 shared enums |
+| file visibility | `public`, `private`                                     |
 
 ## 5. System
 
@@ -235,11 +235,11 @@ curl http://127.0.0.1:8787/health
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `code` | string | 否 | 预留登录 code |
-| `mock_user_id` | string | 否 | mock 用户 ID |
-| `preferred_language` | `zh` / `en` | 否 | 偏好语言 |
+| 字段                 | 类型        | 必填 | 说明          |
+| -------------------- | ----------- | ---- | ------------- |
+| `code`               | string      | 否   | 预留登录 code |
+| `mock_user_id`       | string      | 否   | mock 用户 ID  |
+| `preferred_language` | `zh` / `en` | 否   | 偏好语言      |
 
 响应 data：`AuthSession`
 
@@ -290,32 +290,32 @@ curl http://127.0.0.1:8787/auth/me \
 
 Query：
 
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `page` | number | `1` | 页码 |
-| `pageSize` | number | `10` | 每页数量，最大 50 |
-| `communityId` | string | `tongzilin` | 社区 ID |
-| `keyword` | string | optional | 标题/内容关键词 |
+| 字段          | 类型   | 默认值      | 说明              |
+| ------------- | ------ | ----------- | ----------------- |
+| `page`        | number | `1`         | 页码              |
+| `pageSize`    | number | `10`        | 每页数量，最大 50 |
+| `communityId` | string | `tongzilin` | 社区 ID           |
+| `keyword`     | string | optional    | 标题/内容关键词   |
 
 响应 data：分页 `Event[]`
 
 关键 Event 字段：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `_id` | string | 活动 ID |
-| `title_zh` / `title_en` | string | 双语标题 |
-| `summary_zh` / `summary_en` | string | 双语摘要 |
-| `content_zh` / `content_en` | string | 双语正文 |
-| `cover_url` | URL string | 封面图 |
-| `place_id` | string | 可选地点 ID |
-| `address_text` | string | 地址文本 |
-| `location` | Coordinates | 经纬度 |
-| `start_time` / `end_time` | string | 时间 |
-| `signup_deadline` | string | 报名截止 |
-| `capacity` | number | 容量 |
-| `review_status` | string | 审核状态 |
-| `publish_status` | string | 发布状态 |
+| 字段                        | 类型        | 说明        |
+| --------------------------- | ----------- | ----------- |
+| `_id`                       | string      | 活动 ID     |
+| `title_zh` / `title_en`     | string      | 双语标题    |
+| `summary_zh` / `summary_en` | string      | 双语摘要    |
+| `content_zh` / `content_en` | string      | 双语正文    |
+| `cover_url`                 | URL string  | 封面图      |
+| `place_id`                  | string      | 可选地点 ID |
+| `address_text`              | string      | 地址文本    |
+| `location`                  | Coordinates | 经纬度      |
+| `start_time` / `end_time`   | string      | 时间        |
+| `signup_deadline`           | string      | 报名截止    |
+| `capacity`                  | number      | 容量        |
+| `review_status`             | string      | 审核状态    |
+| `publish_status`            | string      | 发布状态    |
 
 示例：
 
@@ -331,8 +331,8 @@ curl 'http://127.0.0.1:8787/events?page=1&pageSize=10&communityId=tongzilin'
 
 Path params：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
+| 字段 | 类型   | 说明    |
+| ---- | ------ | ------- |
 | `id` | string | 活动 ID |
 
 响应 data：`Event`
@@ -355,12 +355,12 @@ curl http://127.0.0.1:8787/events/event_001
 
 Body：
 
-| 字段 | 类型 | 必填 | 默认值 | 说明 |
-| --- | --- | --- | --- | --- |
-| `contact_name` | string | 是 | - | 联系人 |
-| `contact_phone` | string | 是 | - | 联系电话，至少 6 位 |
-| `attendee_count` | number | 是 | - | 参与人数，1-10 |
-| `source_channel` | string | 否 | `miniapp` | 来源 |
+| 字段             | 类型   | 必填 | 默认值    | 说明                |
+| ---------------- | ------ | ---- | --------- | ------------------- |
+| `contact_name`   | string | 是   | -         | 联系人              |
+| `contact_phone`  | string | 是   | -         | 联系电话，至少 6 位 |
+| `attendee_count` | number | 是   | -         | 参与人数，1-10      |
+| `source_channel` | string | 否   | `miniapp` | 来源                |
 
 响应 data：
 
@@ -423,8 +423,8 @@ curl http://127.0.0.1:8787/events/me/registrations \
 
 Path params：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
+| 字段 | 类型   | 说明            |
+| ---- | ------ | --------------- |
 | `id` | string | registration ID |
 
 响应 data：`EventTicket`
@@ -444,20 +444,20 @@ curl http://127.0.0.1:8787/events/registrations/registration_001/ticket \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `title_zh` / `title_en` | string | 是 | 双语标题 |
-| `summary_zh` / `summary_en` | string | 是 | 双语摘要 |
-| `content_zh` / `content_en` | string | 是 | 双语正文 |
-| `address_text` | string | 是 | 地址文本 |
-| `location` | Coordinates | 是 | 经纬度 |
-| `start_time` / `end_time` | string | 是 | 活动时间 |
-| `signup_deadline` | string | 是 | 报名截止 |
-| `capacity` | number | 是 | 正整数 |
-| `place_id` | string | 否 | 关联地点 |
-| `cover_file_id` | string | 否 | 封面文件 ID |
-| `cover_cloud_path` | string | 否 | 封面 cloud path |
-| `cover_url` | URL string | 否 | 封面 URL |
+| 字段                        | 类型        | 必填 | 说明            |
+| --------------------------- | ----------- | ---- | --------------- |
+| `title_zh` / `title_en`     | string      | 是   | 双语标题        |
+| `summary_zh` / `summary_en` | string      | 是   | 双语摘要        |
+| `content_zh` / `content_en` | string      | 是   | 双语正文        |
+| `address_text`              | string      | 是   | 地址文本        |
+| `location`                  | Coordinates | 是   | 经纬度          |
+| `start_time` / `end_time`   | string      | 是   | 活动时间        |
+| `signup_deadline`           | string      | 是   | 报名截止        |
+| `capacity`                  | number      | 是   | 正整数          |
+| `place_id`                  | string      | 否   | 关联地点        |
+| `cover_file_id`             | string      | 否   | 封面文件 ID     |
+| `cover_cloud_path`          | string      | 否   | 封面 cloud path |
+| `cover_url`                 | URL string  | 否   | 封面 URL        |
 
 响应 data：`Event`
 
@@ -510,11 +510,11 @@ curl -X PATCH http://127.0.0.1:8787/admin/events/event_001 \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `review_status` | `approved` / `rejected` / `pending_review` | 是 | 审核状态 |
-| `publish_status` | `draft` / `published` / `offline` | 否 | 发布状态 |
-| `reason` | string | 否 | 审核原因 |
+| 字段             | 类型                                       | 必填 | 说明     |
+| ---------------- | ------------------------------------------ | ---- | -------- |
+| `review_status`  | `approved` / `rejected` / `pending_review` | 是   | 审核状态 |
+| `publish_status` | `draft` / `published` / `offline`          | 否   | 发布状态 |
+| `reason`         | string                                     | 否   | 审核原因 |
 
 响应 data：`Event`
 
@@ -535,10 +535,10 @@ curl -X POST http://127.0.0.1:8787/admin/events/event_001/review \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `ticket_id` | string | 是 | 票据 ID |
-| `note` | string | 否 | 核销备注 |
+| 字段        | 类型   | 必填 | 说明     |
+| ----------- | ------ | ---- | -------- |
+| `ticket_id` | string | 是   | 票据 ID  |
+| `note`      | string | 否   | 核销备注 |
 
 响应 data：`EventTicket`
 
@@ -561,31 +561,31 @@ curl -X POST http://127.0.0.1:8787/admin/events/event_001/checkin \
 
 Query：
 
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `page` | number | `1` | 页码 |
-| `pageSize` | number | `10` | 每页数量，最大 50 |
-| `communityId` | string | `tongzilin` | 社区 ID |
-| `keyword` | string | optional | 关键词 |
+| 字段          | 类型   | 默认值      | 说明              |
+| ------------- | ------ | ----------- | ----------------- |
+| `page`        | number | `1`         | 页码              |
+| `pageSize`    | number | `10`        | 每页数量，最大 50 |
+| `communityId` | string | `tongzilin` | 社区 ID           |
+| `keyword`     | string | optional    | 关键词            |
 
 响应 data：分页 `Post[]`
 
 Post 字段：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `_id` | string | 帖子 ID |
-| `author_user_id` | string | 作者 |
-| `community_id` | string | 社区 |
-| `title` | string | 标题 |
-| `content` | string | 内容 |
-| `language` | `zh` / `en` | 语言 |
-| `tag_ids` | string[] | 标签 |
-| `location_text` | string/null | 位置文本 |
-| `image_file_ids` | string[] | 图片文件 ID |
-| `image_urls` | URL[] | 图片 URL |
-| `status` | string | 内容状态 |
-| `review_status` | string | 审核状态 |
+| 字段             | 类型        | 说明        |
+| ---------------- | ----------- | ----------- |
+| `_id`            | string      | 帖子 ID     |
+| `author_user_id` | string      | 作者        |
+| `community_id`   | string      | 社区        |
+| `title`          | string      | 标题        |
+| `content`        | string      | 内容        |
+| `language`       | `zh` / `en` | 语言        |
+| `tag_ids`        | string[]    | 标签        |
+| `location_text`  | string/null | 位置文本    |
+| `image_file_ids` | string[]    | 图片文件 ID |
+| `image_urls`     | URL[]       | 图片 URL    |
+| `status`         | string      | 内容状态    |
+| `review_status`  | string      | 审核状态    |
 
 示例：
 
@@ -615,15 +615,15 @@ curl http://127.0.0.1:8787/discover/posts/post_001
 
 Body：
 
-| 字段 | 类型 | 必填 | 默认值 | 说明 |
-| --- | --- | --- | --- | --- |
-| `title` | string | 是 | - | 标题 |
-| `content` | string | 是 | - | 内容 |
-| `language` | `zh` / `en` | 是 | - | 语言 |
-| `tag_ids` | string[] | 是 | - | 标签 |
-| `location_text` | string/null | 否 | `null` | 位置 |
-| `image_file_ids` | string[] | 否 | `[]` | 图片文件 ID |
-| `image_urls` | URL[] | 否 | `[]` | 图片 URL |
+| 字段             | 类型        | 必填 | 默认值 | 说明        |
+| ---------------- | ----------- | ---- | ------ | ----------- |
+| `title`          | string      | 是   | -      | 标题        |
+| `content`        | string      | 是   | -      | 内容        |
+| `language`       | `zh` / `en` | 是   | -      | 语言        |
+| `tag_ids`        | string[]    | 是   | -      | 标签        |
+| `location_text`  | string/null | 否   | `null` | 位置        |
+| `image_file_ids` | string[]    | 否   | `[]`   | 图片文件 ID |
+| `image_urls`     | URL[]       | 否   | `[]`   | 图片 URL    |
 
 响应 data：`Post`
 
@@ -644,10 +644,10 @@ curl -X POST http://127.0.0.1:8787/discover/posts \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `content` | string | 是 | 评论内容 |
-| `language` | `zh` / `en` | 是 | 语言 |
+| 字段       | 类型        | 必填 | 说明     |
+| ---------- | ----------- | ---- | -------- |
+| `content`  | string      | 是   | 评论内容 |
+| `language` | `zh` / `en` | 是   | 语言     |
 
 响应 data：`Comment`
 
@@ -668,10 +668,10 @@ curl -X POST http://127.0.0.1:8787/discover/posts/post_001/comments \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `reason` | string | 是 | 举报原因 |
-| `description` | string | 否 | 补充描述 |
+| 字段          | 类型   | 必填 | 说明     |
+| ------------- | ------ | ---- | -------- |
+| `reason`      | string | 是   | 举报原因 |
+| `description` | string | 否   | 补充描述 |
 
 响应 data：`Post`
 
@@ -692,10 +692,10 @@ curl -X POST http://127.0.0.1:8787/discover/posts/post_001/report \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `review_status` | `visible` / `hidden` / `deleted` | 是 | 处理结果 |
-| `reason` | string | 否 | 原因 |
+| 字段            | 类型                             | 必填 | 说明     |
+| --------------- | -------------------------------- | ---- | -------- |
+| `review_status` | `visible` / `hidden` / `deleted` | 是   | 处理结果 |
+| `reason`        | string                           | 否   | 原因     |
 
 响应 data：`Post`
 
@@ -716,6 +716,8 @@ curl -X POST http://127.0.0.1:8787/admin/discover/posts/post_001/moderation \
 - `GET /places/map-markers` 只返回 marker-safe 字段，不返回完整地址、图集、导航等详情字段。
 - `GET /places/:id` 返回详情字段，包括 `gallery_media`、派生兼容字段 `gallery_urls`、`navigation`、`share`。
 - `GET /admin/places` 返回 canonical/admin place，可见 `import_review`；public payload 不返回 `import_review` 或志愿者原始证据。
+- `PATCH /admin/places/:id` 是 partial update；未传字段保持原值，非法字段值返回 `400 VALIDATION_ERROR`。
+- `DELETE /admin/places/:id` 是 admin hard delete；成功后该地点从 admin list、public list、map marker 和 public detail 中消失。
 - public places 只应展示 `status=published` 且属于目标 `communityId` 的地点。
 
 ### GET `/places`
@@ -726,33 +728,33 @@ curl -X POST http://127.0.0.1:8787/admin/discover/posts/post_001/moderation \
 
 Query：
 
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `page` | number | `1` | 页码 |
-| `pageSize` | number | `10` | 每页数量，最大 50 |
-| `communityId` | string | `tongzilin` | 社区 ID |
-| `keyword` | string | optional | 关键词 |
-| `category` | string | optional | 一级或二级分类 |
-| `tag` | string | optional | 标签 ID |
-| `recommended` | boolean | optional | 是否只看推荐 |
-| `sort` | `recommended` / `name` | `recommended` | 排序 |
+| 字段          | 类型                   | 默认值        | 说明              |
+| ------------- | ---------------------- | ------------- | ----------------- |
+| `page`        | number                 | `1`           | 页码              |
+| `pageSize`    | number                 | `10`          | 每页数量，最大 50 |
+| `communityId` | string                 | `tongzilin`   | 社区 ID           |
+| `keyword`     | string                 | optional      | 关键词            |
+| `category`    | string                 | optional      | 一级或二级分类    |
+| `tag`         | string                 | optional      | 标签 ID           |
+| `recommended` | boolean                | optional      | 是否只看推荐      |
+| `sort`        | `recommended` / `name` | `recommended` | 排序              |
 
 响应 data：分页 `PlaceListItem[]`
 
 PlaceListItem 字段：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `_id` | string | 地点 ID |
-| `name_zh` / `name_en` | string | 双语名称 |
-| `cover_url` | URL/null | 封面 |
-| `category_level_1` / `category_level_2` | string | 分类 |
-| `short_address_zh` / `short_address_en` | string | 短地址 |
-| `summary_zh` / `summary_en` | string | 摘要 |
-| `tag_ids` | string[] | 标签 |
-| `is_recommended` | boolean | 是否推荐 |
-| `recommended_reason_zh` / `recommended_reason_en` | string/null | 推荐理由 |
-| `supports_navigation` | boolean | 是否支持导航 |
+| 字段                                              | 类型        | 说明         |
+| ------------------------------------------------- | ----------- | ------------ |
+| `_id`                                             | string      | 地点 ID      |
+| `name_zh` / `name_en`                             | string      | 双语名称     |
+| `cover_url`                                       | URL/null    | 封面         |
+| `category_level_1` / `category_level_2`           | string      | 分类         |
+| `short_address_zh` / `short_address_en`           | string      | 短地址       |
+| `summary_zh` / `summary_en`                       | string      | 摘要         |
+| `tag_ids`                                         | string[]    | 标签         |
+| `is_recommended`                                  | boolean     | 是否推荐     |
+| `recommended_reason_zh` / `recommended_reason_en` | string/null | 推荐理由     |
+| `supports_navigation`                             | boolean     | 是否支持导航 |
 
 示例：
 
@@ -774,13 +776,13 @@ curl 'http://127.0.0.1:8787/places?communityId=tongzilin&recommended=true&sort=r
 
 Marker 字段：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `_id` | string | 地点 ID |
-| `name_zh` / `name_en` | string | 名称 |
-| `category_level_1` | string | 一级分类 |
-| `is_recommended` | boolean | 是否推荐 |
-| `location` | Coordinates | 经纬度 |
+| 字段                  | 类型        | 说明     |
+| --------------------- | ----------- | -------- |
+| `_id`                 | string      | 地点 ID  |
+| `name_zh` / `name_en` | string      | 名称     |
+| `category_level_1`    | string      | 一级分类 |
+| `is_recommended`      | boolean     | 是否推荐 |
+| `location`            | Coordinates | 经纬度   |
 
 示例：
 
@@ -798,26 +800,26 @@ curl http://127.0.0.1:8787/places/map-markers
 
 关键字段：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `_id` | string | 地点 ID |
-| `community_id` | string | 社区 |
-| `name_zh` / `name_en` | string | 名称 |
-| `cover_url` | URL/null | 封面 |
-| `category_level_1` / `category_level_2` | string | 分类 |
-| `tag_ids` | string[] | 标签 |
-| `address_zh` / `address_en` | string | 完整地址 |
-| `location` | Coordinates | 经纬度 |
-| `business_hours_zh` / `business_hours_en` | string | 营业时间 |
-| `intro_zh` / `intro_en` | string | 简介 |
-| `gallery_media` | PlaceGalleryMedia[] | 主图集字段 |
-| `gallery_urls` | URL[] | 由 `gallery_media.url` 派生的兼容字段 |
-| `is_recommended` | boolean | 是否推荐 |
-| `supports_navigation` | boolean | 是否支持导航 |
-| `supports_favorite` | boolean | 是否支持收藏 |
-| `supports_share` | boolean | 是否支持分享 |
-| `navigation` | object | 导航信息 |
-| `share` | object | 分享信息 |
+| 字段                                      | 类型                | 说明                                  |
+| ----------------------------------------- | ------------------- | ------------------------------------- |
+| `_id`                                     | string              | 地点 ID                               |
+| `community_id`                            | string              | 社区                                  |
+| `name_zh` / `name_en`                     | string              | 名称                                  |
+| `cover_url`                               | URL/null            | 封面                                  |
+| `category_level_1` / `category_level_2`   | string              | 分类                                  |
+| `tag_ids`                                 | string[]            | 标签                                  |
+| `address_zh` / `address_en`               | string              | 完整地址                              |
+| `location`                                | Coordinates         | 经纬度                                |
+| `business_hours_zh` / `business_hours_en` | string              | 营业时间                              |
+| `intro_zh` / `intro_en`                   | string              | 简介                                  |
+| `gallery_media`                           | PlaceGalleryMedia[] | 主图集字段                            |
+| `gallery_urls`                            | URL[]               | 由 `gallery_media.url` 派生的兼容字段 |
+| `is_recommended`                          | boolean             | 是否推荐                              |
+| `supports_navigation`                     | boolean             | 是否支持导航                          |
+| `supports_favorite`                       | boolean             | 是否支持收藏                          |
+| `supports_share`                          | boolean             | 是否支持分享                          |
+| `navigation`                              | object              | 导航信息                              |
+| `share`                                   | object              | 分享信息                              |
 
 `gallery_media`：
 
@@ -860,29 +862,29 @@ curl http://127.0.0.1:8787/admin/places \
 
 Body：
 
-| 字段 | 类型 | 必填 | 默认值 | 说明 |
-| --- | --- | --- | --- | --- |
-| `name_zh` / `name_en` | string | 是 | - | 双语名称 |
-| `category_level_1` | string | 是 | - | 一级分类 |
-| `category_level_2` | string | 是 | - | 二级分类 |
-| `address_zh` / `address_en` | string | 是 | - | 地址 |
-| `location` | Coordinates | 是 | - | 经纬度 |
-| `business_hours_zh` / `business_hours_en` | string | 是 | - | 营业时间 |
-| `intro_zh` / `intro_en` | string | 是 | - | 简介 |
-| `cover_file_id` | string/null | 否 | `null` | 封面文件 ID |
-| `cover_url` | URL/null | 否 | `null` | 封面 URL |
-| `tag_ids` | string[] | 否 | `[]` | 标签 |
-| `recommended_reason_zh` / `recommended_reason_en` | string/null | 否 | `null` | 推荐理由 |
-| `is_recommended` | boolean | 否 | `false` | 是否推荐 |
-| `recommended_rank` | number | 否 | `0` | 推荐排序 |
-| `gallery_file_ids` | string[] | 否 | `[]` | 图集文件 ID |
-| `gallery_urls` | URL[] | 否 | `[]` | 兼容图集 URL |
-| `tencent_map_poi_id` | string/null | 否 | `null` | 腾讯地图 POI |
-| `supports_navigation` | boolean | 否 | `true` | 支持导航 |
-| `supports_favorite` | boolean | 否 | `true` | 支持收藏 |
-| `supports_share` | boolean | 否 | `true` | 支持分享 |
-| `status` | `draft` / `published` / `offline` | 否 | `draft` | 发布状态 |
-| `import_review` | object/null | 否 | `null` | 志愿者导入审核元数据 |
+| 字段                                              | 类型                              | 必填 | 默认值  | 说明                 |
+| ------------------------------------------------- | --------------------------------- | ---- | ------- | -------------------- |
+| `name_zh` / `name_en`                             | string                            | 是   | -       | 双语名称             |
+| `category_level_1`                                | string                            | 是   | -       | 一级分类             |
+| `category_level_2`                                | string                            | 是   | -       | 二级分类             |
+| `address_zh` / `address_en`                       | string                            | 是   | -       | 地址                 |
+| `location`                                        | Coordinates                       | 是   | -       | 经纬度               |
+| `business_hours_zh` / `business_hours_en`         | string                            | 是   | -       | 营业时间             |
+| `intro_zh` / `intro_en`                           | string                            | 是   | -       | 简介                 |
+| `cover_file_id`                                   | string/null                       | 否   | `null`  | 封面文件 ID          |
+| `cover_url`                                       | URL/null                          | 否   | `null`  | 封面 URL             |
+| `tag_ids`                                         | string[]                          | 否   | `[]`    | 标签                 |
+| `recommended_reason_zh` / `recommended_reason_en` | string/null                       | 否   | `null`  | 推荐理由             |
+| `is_recommended`                                  | boolean                           | 否   | `false` | 是否推荐             |
+| `recommended_rank`                                | number                            | 否   | `0`     | 推荐排序             |
+| `gallery_file_ids`                                | string[]                          | 否   | `[]`    | 图集文件 ID          |
+| `gallery_urls`                                    | URL[]                             | 否   | `[]`    | 兼容图集 URL         |
+| `tencent_map_poi_id`                              | string/null                       | 否   | `null`  | 腾讯地图 POI         |
+| `supports_navigation`                             | boolean                           | 否   | `true`  | 支持导航             |
+| `supports_favorite`                               | boolean                           | 否   | `true`  | 支持收藏             |
+| `supports_share`                                  | boolean                           | 否   | `true`  | 支持分享             |
+| `status`                                          | `draft` / `published` / `offline` | 否   | `draft` | 发布状态             |
+| `import_review`                                   | object/null                       | 否   | `null`  | 志愿者导入审核元数据 |
 
 示例：
 
@@ -916,6 +918,12 @@ Body：`POST /admin/places` body 的任意子集。
 
 响应 data：`Place`
 
+关键错误：
+
+- `400 VALIDATION_ERROR`：请求 body 不符合 `UpdatePlaceInputSchema`，例如非法分类、状态或 URL。
+- `403 FORBIDDEN`：actor 不是 `community_admin` 或 `system_admin`。
+- `404 NOT_FOUND`：地点 ID 不存在。
+
 示例：
 
 ```bash
@@ -923,6 +931,38 @@ curl -X PATCH http://127.0.0.1:8787/admin/places/place_001 \
   -H 'content-type: application/json' \
   -H 'x-mock-user-id: user_001' \
   -d '{"is_recommended":true,"recommended_rank":1}'
+```
+
+### DELETE `/admin/places/:id`
+
+用途：管理端删除地点。删除为 hard delete，不会新增 `deleted` 状态，也不会清理既有关联文件资产。
+
+权限：`community_admin` 或 `system_admin`。
+
+响应 data：
+
+```json
+{
+  "deleted_id": "place_001"
+}
+```
+
+删除后效果：
+
+- `GET /admin/places` 不再包含该地点。
+- `GET /places` 和 `GET /places/map-markers` 不再返回该地点。
+- `GET /places/:id` 返回 `404 NOT_FOUND`。
+
+关键错误：
+
+- `403 FORBIDDEN`：actor 不是 `community_admin` 或 `system_admin`。
+- `404 NOT_FOUND`：地点 ID 不存在或已删除。
+
+示例：
+
+```bash
+curl -X DELETE http://127.0.0.1:8787/admin/places/place_001 \
+  -H 'x-mock-user-id: user_001'
 ```
 
 ## 10. Announcements
@@ -935,27 +975,27 @@ curl -X PATCH http://127.0.0.1:8787/admin/places/place_001 \
 
 Query：
 
-| 字段 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `page` | number | `1` | 页码 |
-| `pageSize` | number | `10` | 每页数量，最大 50 |
-| `communityId` | string | `tongzilin` | 社区 ID |
+| 字段          | 类型   | 默认值      | 说明              |
+| ------------- | ------ | ----------- | ----------------- |
+| `page`        | number | `1`         | 页码              |
+| `pageSize`    | number | `10`        | 每页数量，最大 50 |
+| `communityId` | string | `tongzilin` | 社区 ID           |
 
 响应 data：分页 `Announcement[]`
 
 Announcement 字段：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `_id` | string | 公告 ID |
-| `community_id` | string | 社区 |
-| `title_zh` / `title_en` | string | 标题 |
-| `summary_zh` / `summary_en` | string | 摘要 |
-| `content_zh` / `content_en` | string | 正文 |
-| `cover_file_id` | string | 封面文件 ID |
-| `cover_url` | URL | 封面 URL |
-| `status` | string | 状态 |
-| `published_at` | string | 发布时间 |
+| 字段                        | 类型   | 说明        |
+| --------------------------- | ------ | ----------- |
+| `_id`                       | string | 公告 ID     |
+| `community_id`              | string | 社区        |
+| `title_zh` / `title_en`     | string | 标题        |
+| `summary_zh` / `summary_en` | string | 摘要        |
+| `content_zh` / `content_en` | string | 正文        |
+| `cover_file_id`             | string | 封面文件 ID |
+| `cover_url`                 | URL    | 封面 URL    |
+| `status`                    | string | 状态        |
+| `published_at`              | string | 发布时间    |
 
 示例：
 
@@ -989,13 +1029,13 @@ curl http://127.0.0.1:8787/announcements/announcement_001
 
 Notification 字段：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `_id` | string | 通知 ID |
-| `user_id` | string | 用户 ID |
-| `title` | string | 标题 |
-| `body` | string | 内容 |
-| `status` | string | 状态 |
+| 字段         | 类型   | 说明     |
+| ------------ | ------ | -------- |
+| `_id`        | string | 通知 ID  |
+| `user_id`    | string | 用户 ID  |
+| `title`      | string | 标题     |
+| `body`       | string | 内容     |
+| `status`     | string | 状态     |
 | `created_at` | string | 创建时间 |
 
 示例：
@@ -1028,15 +1068,15 @@ curl -X POST http://127.0.0.1:8787/notifications/notification_001/read \
 
 ### 12.1 路径规则
 
-| 常量 | prefix | 用途 |
-| --- | --- | --- |
-| `eventCovers` | `public/events/` | 活动封面 |
-| `placeGallery` | `public/places/` | 地点图集 |
-| `postImages` | `public/posts/` | 帖子图片 |
-| `announcementImages` | `public/announcements/` | 公告图片 |
-| `tickets` | `private/tickets/` | 票券二维码 |
-| `exports` | `private/exports/` | 导出文件 |
-| `admin` | `private/admin/` | 后台私有文件 |
+| 常量                 | prefix                  | 用途         |
+| -------------------- | ----------------------- | ------------ |
+| `eventCovers`        | `public/events/`        | 活动封面     |
+| `placeGallery`       | `public/places/`        | 地点图集     |
+| `postImages`         | `public/posts/`         | 帖子图片     |
+| `announcementImages` | `public/announcements/` | 公告图片     |
+| `tickets`            | `private/tickets/`      | 票券二维码   |
+| `exports`            | `private/exports/`      | 导出文件     |
+| `admin`              | `private/admin/`        | 后台私有文件 |
 
 权限规则：
 
@@ -1055,13 +1095,13 @@ curl -X POST http://127.0.0.1:8787/notifications/notification_001/read \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `biz_type` | string | 是 | 业务类型，如 `place_gallery`、`event_cover` |
-| `biz_id` | string | 是 | 业务 ID |
-| `file_name` | string | 是 | 文件名 |
-| `visibility` | `public` / `private` | 是 | 可见性 |
-| `target_prefix` | enum | 是 | 必须是上表 prefix 之一 |
+| 字段            | 类型                 | 必填 | 说明                                        |
+| --------------- | -------------------- | ---- | ------------------------------------------- |
+| `biz_type`      | string               | 是   | 业务类型，如 `place_gallery`、`event_cover` |
+| `biz_id`        | string               | 是   | 业务 ID                                     |
+| `file_name`     | string               | 是   | 文件名                                      |
+| `visibility`    | `public` / `private` | 是   | 可见性                                      |
+| `target_prefix` | enum                 | 是   | 必须是上表 prefix 之一                      |
 
 响应 data：
 
@@ -1099,28 +1139,28 @@ curl -X POST http://127.0.0.1:8787/files/upload-requests \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `biz_type` | string | 是 | 业务类型 |
-| `biz_id` | string | 是 | 业务 ID |
-| `file_id` | string | 是 | 云文件 ID |
-| `cloud_path` | string | 是 | cloud path |
-| `visibility` | `public` / `private` | 是 | 可见性 |
+| 字段         | 类型                 | 必填 | 说明       |
+| ------------ | -------------------- | ---- | ---------- |
+| `biz_type`   | string               | 是   | 业务类型   |
+| `biz_id`     | string               | 是   | 业务 ID    |
+| `file_id`    | string               | 是   | 云文件 ID  |
+| `cloud_path` | string               | 是   | cloud path |
+| `visibility` | `public` / `private` | 是   | 可见性     |
 
 响应 data：`FileAsset`
 
 FileAsset 字段：
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `_id` | string | 文件资产 ID |
-| `file_id` | string | 云文件 ID |
-| `cloud_path` | string | cloud path |
-| `visibility` | `public` / `private` | 可见性 |
-| `biz_type` | string | 业务类型 |
-| `biz_id` | string | 业务 ID |
-| `uploaded_by` | string | 上传用户 |
-| `status` | string | 状态 |
+| 字段          | 类型                 | 说明        |
+| ------------- | -------------------- | ----------- |
+| `_id`         | string               | 文件资产 ID |
+| `file_id`     | string               | 云文件 ID   |
+| `cloud_path`  | string               | cloud path  |
+| `visibility`  | `public` / `private` | 可见性      |
+| `biz_type`    | string               | 业务类型    |
+| `biz_id`      | string               | 业务 ID     |
+| `uploaded_by` | string               | 上传用户    |
+| `status`      | string               | 状态        |
 
 示例：
 
@@ -1145,9 +1185,9 @@ curl -X POST http://127.0.0.1:8787/files/complete \
 
 Body：
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| `file_id` | string | 是 | 云文件 ID |
+| 字段      | 类型   | 必填 | 说明      |
+| --------- | ------ | ---- | --------- |
+| `file_id` | string | 是   | 云文件 ID |
 
 响应 data：
 
@@ -1169,19 +1209,20 @@ curl -X POST http://127.0.0.1:8787/files/private-url \
 
 ## 13. 管理后台接口汇总
 
-| 模块 | 方法 | 路径 | 权限 | 用途 |
-| --- | --- | --- | --- | --- |
-| Events | `POST` | `/admin/events` | admin | 创建活动 |
-| Events | `PATCH` | `/admin/events/:id` | admin | 更新活动 |
-| Events | `POST` | `/admin/events/:id/review` | admin | 审核活动 |
-| Events | `POST` | `/admin/events/:id/checkin` | admin | 核销票据 |
-| Discover | `POST` | `/admin/discover/posts/:id/moderation` | admin | 审核/治理帖子 |
-| Places | `GET` | `/admin/places` | admin | 地点列表 |
-| Places | `POST` | `/admin/places` | admin | 创建地点 |
-| Places | `PATCH` | `/admin/places/:id` | admin | 更新地点 |
-| Files | `POST` | `/files/upload-requests` | conditional | 创建上传请求 |
-| Files | `POST` | `/files/complete` | conditional | 完成文件登记 |
-| Files | `POST` | `/files/private-url` | actor | 获取私有文件临时地址 |
+| 模块     | 方法     | 路径                                   | 权限        | 用途                 |
+| -------- | -------- | -------------------------------------- | ----------- | -------------------- |
+| Events   | `POST`   | `/admin/events`                        | admin       | 创建活动             |
+| Events   | `PATCH`  | `/admin/events/:id`                    | admin       | 更新活动             |
+| Events   | `POST`   | `/admin/events/:id/review`             | admin       | 审核活动             |
+| Events   | `POST`   | `/admin/events/:id/checkin`            | admin       | 核销票据             |
+| Discover | `POST`   | `/admin/discover/posts/:id/moderation` | admin       | 审核/治理帖子        |
+| Places   | `GET`    | `/admin/places`                        | admin       | 地点列表             |
+| Places   | `POST`   | `/admin/places`                        | admin       | 创建地点             |
+| Places   | `PATCH`  | `/admin/places/:id`                    | admin       | 更新地点             |
+| Places   | `DELETE` | `/admin/places/:id`                    | admin       | 删除地点             |
+| Files    | `POST`   | `/files/upload-requests`               | conditional | 创建上传请求         |
+| Files    | `POST`   | `/files/complete`                      | conditional | 完成文件登记         |
+| Files    | `POST`   | `/files/private-url`                   | actor       | 获取私有文件临时地址 |
 
 `conditional` 表示普通文件需要 actor，place gallery 需要 admin。
 

@@ -29,7 +29,7 @@ import {
 import { createProvider } from "./providers";
 import type { ApiProvider } from "./providers/types";
 
-type HttpMethod = "GET" | "POST" | "PATCH";
+type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 type CloudbaseEventHandler = (
   event: unknown,
   context: Partial<CloudbaseContextLike>
@@ -239,7 +239,11 @@ export const main: CloudbaseEventHandler = async (event, context) => {
       if (method === "POST" && match.matched) {
         const input = parseOrThrow(CreateEventRegistrationInputSchema, body);
         return ok(
-          await provider.events.createRegistration(match.params.id, input, actorId),
+          await provider.events.createRegistration(
+            match.params.id,
+            input,
+            actorId
+          ),
           requestId,
           201
         );
@@ -300,7 +304,11 @@ export const main: CloudbaseEventHandler = async (event, context) => {
       if (method === "POST" && commentMatch.matched) {
         const input = parseOrThrow(CreateCommentInputSchema, body);
         return ok(
-          await provider.posts.createComment(commentMatch.params.id, input, actorId),
+          await provider.posts.createComment(
+            commentMatch.params.id,
+            input,
+            actorId
+          ),
           requestId,
           201
         );
@@ -360,7 +368,9 @@ export const main: CloudbaseEventHandler = async (event, context) => {
       const match = matchRoute("/announcements/:id", pathname);
 
       if (method === "GET" && match.matched) {
-        const announcement = await provider.announcements.detail(match.params.id);
+        const announcement = await provider.announcements.detail(
+          match.params.id
+        );
 
         if (!announcement) {
           throw apiError("NOT_FOUND", "Announcement not found.", 404);
@@ -399,7 +409,11 @@ export const main: CloudbaseEventHandler = async (event, context) => {
           "system_admin"
         ]);
       }
-      return ok(await provider.files.createUploadRequest(input), requestId, 201);
+      return ok(
+        await provider.files.createUploadRequest(input),
+        requestId,
+        201
+      );
     }
 
     if (method === "POST" && pathname === "/files/complete") {
@@ -423,10 +437,11 @@ export const main: CloudbaseEventHandler = async (event, context) => {
     }
 
     if (method === "POST" && pathname === "/admin/events") {
-      const actor = await requireRole(provider, { eventID: requestId, httpContext }, [
-        "community_admin",
-        "system_admin"
-      ]);
+      const actor = await requireRole(
+        provider,
+        { eventID: requestId, httpContext },
+        ["community_admin", "system_admin"]
+      );
       const input = parseOrThrow(CreateEventInputSchema, body);
       return ok(await provider.events.create(input, actor._id), requestId, 201);
     }
@@ -492,7 +507,10 @@ export const main: CloudbaseEventHandler = async (event, context) => {
     }
 
     {
-      const match = matchRoute("/admin/discover/posts/:id/moderation", pathname);
+      const match = matchRoute(
+        "/admin/discover/posts/:id/moderation",
+        pathname
+      );
 
       if (method === "POST" && match.matched) {
         await requireRole(provider, { eventID: requestId, httpContext }, [
@@ -537,6 +555,20 @@ export const main: CloudbaseEventHandler = async (event, context) => {
         ]);
         const input = parseOrThrow(UpdatePlaceInputSchema, body);
         const item = await provider.places.update(match.params.id, input);
+
+        if (!item) {
+          throw apiError("NOT_FOUND", "Place not found.", 404);
+        }
+
+        return ok(item, requestId);
+      }
+
+      if (method === "DELETE" && match.matched) {
+        await requireRole(provider, { eventID: requestId, httpContext }, [
+          "community_admin",
+          "system_admin"
+        ]);
+        const item = await provider.places.delete(match.params.id);
 
         if (!item) {
           throw apiError("NOT_FOUND", "Place not found.", 404);

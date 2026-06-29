@@ -43,6 +43,7 @@ export const apiPaths = {
     moderatePost: (id: string) => `/admin/discover/posts/${id}/moderation`,
     listPlaces: "/admin/places",
     createPlace: "/admin/places",
-    updatePlace: (id: string) => `/admin/places/${id}`
+    updatePlace: (id: string) => `/admin/places/${id}`,
+    deletePlace: (id: string) => `/admin/places/${id}`
   }
 };

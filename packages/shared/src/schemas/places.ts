@@ -142,3 +142,7 @@ export const CreatePlaceInputSchema = PlaceSchema.pick({
 });
 
 export const UpdatePlaceInputSchema = CreatePlaceInputSchema.partial();
+
+export const DeletePlaceResponseSchema = z.object({
+  deleted_id: z.string()
+});

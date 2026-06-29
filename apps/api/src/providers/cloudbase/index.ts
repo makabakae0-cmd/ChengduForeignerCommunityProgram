@@ -242,7 +242,9 @@ const normalizePlace = (raw: unknown): Place | null => {
 
 const readPlaces = async (context: LiveCloudbaseContext) => {
   const result = await context.places.limit(MAX_PLACES_FETCH).get();
-  return result.data.map(normalizePlace).filter((place): place is Place => !!place);
+  return result.data
+    .map(normalizePlace)
+    .filter((place): place is Place => !!place);
 };
 
 const createPlaceFromInput = (input: Partial<Place>): Place =>
@@ -277,7 +279,9 @@ const createPlaceFromInput = (input: Partial<Place>): Place =>
     import_review: input.import_review ?? null
   });
 
-const createLivePlacesProvider = (context: LiveCloudbaseContext): ApiProvider["places"] => ({
+const createLivePlacesProvider = (
+  context: LiveCloudbaseContext
+): ApiProvider["places"] => ({
   async list(input) {
     const places = sortPlaces(
       (await readPlaces(context)).filter((place) => {
@@ -338,14 +342,16 @@ const createLivePlacesProvider = (context: LiveCloudbaseContext): ApiProvider["p
           place.status === "published" &&
           hasUsableCoordinates(place)
       )
-    ).map((place): PlaceMapMarker => ({
-      _id: place._id,
-      name_zh: place.name_zh,
-      name_en: place.name_en,
-      category_level_1: place.category_level_1,
-      is_recommended: place.is_recommended,
-      location: place.location
-    }));
+    ).map(
+      (place): PlaceMapMarker => ({
+        _id: place._id,
+        name_zh: place.name_zh,
+        name_en: place.name_en,
+        category_level_1: place.category_level_1,
+        is_recommended: place.is_recommended,
+        location: place.location
+      })
+    );
   },
   async create(input) {
     const place = createPlaceFromInput(input);
@@ -367,6 +373,17 @@ const createLivePlacesProvider = (context: LiveCloudbaseContext): ApiProvider["p
 
     await context.places.doc(id).update(cleanUpdate(input));
     return nextPlace;
+  },
+  async delete(id) {
+    const places = await readPlaces(context);
+    const existing = places.find((place) => place._id === id);
+
+    if (!existing) {
+      return null;
+    }
+
+    await context.places.doc(id).remove();
+    return { deleted_id: id };
   }
 });
 

@@ -71,7 +71,14 @@ components:
       properties:
         code:
           type: string
-          examples: [VALIDATION_ERROR, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, INTERNAL_ERROR]
+          examples:
+            [
+              VALIDATION_ERROR,
+              UNAUTHORIZED,
+              FORBIDDEN,
+              NOT_FOUND,
+              INTERNAL_ERROR
+            ]
         message:
           type: string
         details: {}
@@ -83,7 +90,7 @@ components:
           type: boolean
           const: false
         error:
-          $ref: '#/components/schemas/ApiError'
+          $ref: "#/components/schemas/ApiError"
         requestId:
           type: string
     SuccessEnvelope:
@@ -108,7 +115,8 @@ components:
           example: 104.062
     User:
       type: object
-      required: [_id, nickname, avatar_url, preferred_language, role_flags, status]
+      required:
+        [_id, nickname, avatar_url, preferred_language, role_flags, status]
       properties:
         _id:
           type: string
@@ -138,7 +146,7 @@ components:
       required: [user, token]
       properties:
         user:
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User"
         token:
           type: string
     Event:
@@ -193,7 +201,7 @@ components:
         address_text:
           type: string
         location:
-          $ref: '#/components/schemas/Coordinates'
+          $ref: "#/components/schemas/Coordinates"
         start_time:
           type: string
         end_time:
@@ -242,7 +250,7 @@ components:
         address_text:
           type: string
         location:
-          $ref: '#/components/schemas/Coordinates'
+          $ref: "#/components/schemas/Coordinates"
         start_time:
           type: string
         end_time:
@@ -280,7 +288,7 @@ components:
         address_text:
           type: string
         location:
-          $ref: '#/components/schemas/Coordinates'
+          $ref: "#/components/schemas/Coordinates"
         start_time:
           type: string
         end_time:
@@ -330,7 +338,18 @@ components:
           default: miniapp
     EventRegistration:
       type: object
-      required: [_id, event_id, user_id, contact_name, contact_phone, attendee_count, registration_status, ticket_id, source_channel]
+      required:
+        [
+          _id,
+          event_id,
+          user_id,
+          contact_name,
+          contact_phone,
+          attendee_count,
+          registration_status,
+          ticket_id,
+          source_channel
+        ]
       properties:
         _id:
           type: string
@@ -352,7 +371,18 @@ components:
           type: string
     EventTicket:
       type: object
-      required: [_id, registration_id, ticket_code, qr_file_id, qr_cloud_path, visibility, status, issued_at, used_at]
+      required:
+        [
+          _id,
+          registration_id,
+          ticket_code,
+          qr_file_id,
+          qr_cloud_path,
+          visibility,
+          status,
+          issued_at,
+          used_at
+        ]
       properties:
         _id:
           type: string
@@ -374,15 +404,15 @@ components:
         used_at:
           type:
             - string
-            - 'null'
+            - "null"
     EventWithRegistration:
       type: object
       required: [registration, ticket]
       properties:
         registration:
-          $ref: '#/components/schemas/EventRegistration'
+          $ref: "#/components/schemas/EventRegistration"
         ticket:
-          $ref: '#/components/schemas/EventTicket'
+          $ref: "#/components/schemas/EventTicket"
     CheckinInput:
       type: object
       required: [ticket_id]
@@ -393,7 +423,21 @@ components:
           type: string
     Post:
       type: object
-      required: [_id, author_user_id, community_id, title, content, language, tag_ids, location_text, image_file_ids, image_urls, status, review_status]
+      required:
+        [
+          _id,
+          author_user_id,
+          community_id,
+          title,
+          content,
+          language,
+          tag_ids,
+          location_text,
+          image_file_ids,
+          image_urls,
+          status,
+          review_status
+        ]
       properties:
         _id:
           type: string
@@ -415,7 +459,7 @@ components:
         location_text:
           type:
             - string
-            - 'null'
+            - "null"
         image_file_ids:
           type: array
           items:
@@ -447,7 +491,7 @@ components:
         location_text:
           type:
             - string
-            - 'null'
+            - "null"
           default: null
         image_file_ids:
           type: array
@@ -506,7 +550,24 @@ components:
           type: string
     PlaceListItem:
       type: object
-      required: [_id, name_zh, name_en, cover_url, category_level_1, category_level_2, short_address_zh, short_address_en, summary_zh, summary_en, tag_ids, is_recommended, recommended_reason_zh, recommended_reason_en, supports_navigation]
+      required:
+        [
+          _id,
+          name_zh,
+          name_en,
+          cover_url,
+          category_level_1,
+          category_level_2,
+          short_address_zh,
+          short_address_en,
+          summary_zh,
+          summary_en,
+          tag_ids,
+          is_recommended,
+          recommended_reason_zh,
+          recommended_reason_en,
+          supports_navigation
+        ]
       properties:
         _id:
           type: string
@@ -517,7 +578,7 @@ components:
         cover_url:
           type:
             - string
-            - 'null'
+            - "null"
           format: uri
         category_level_1:
           type: string
@@ -540,16 +601,17 @@ components:
         recommended_reason_zh:
           type:
             - string
-            - 'null'
+            - "null"
         recommended_reason_en:
           type:
             - string
-            - 'null'
+            - "null"
         supports_navigation:
           type: boolean
     PlaceMapMarker:
       type: object
-      required: [_id, name_zh, name_en, category_level_1, is_recommended, location]
+      required:
+        [_id, name_zh, name_en, category_level_1, is_recommended, location]
       properties:
         _id:
           type: string
@@ -562,7 +624,7 @@ components:
         is_recommended:
           type: boolean
         location:
-          $ref: '#/components/schemas/Coordinates'
+          $ref: "#/components/schemas/Coordinates"
     PlaceGalleryMedia:
       type: object
       required: [file_id, cloud_path, url, alt_zh, alt_en]
@@ -580,7 +642,34 @@ components:
           type: string
     PlaceDetail:
       type: object
-      required: [_id, community_id, name_zh, name_en, cover_url, category_level_1, category_level_2, tag_ids, address_zh, address_en, location, business_hours_zh, business_hours_en, intro_zh, intro_en, gallery_media, gallery_urls, is_recommended, recommended_reason_zh, recommended_reason_en, supports_navigation, supports_favorite, supports_share, navigation, share]
+      required:
+        [
+          _id,
+          community_id,
+          name_zh,
+          name_en,
+          cover_url,
+          category_level_1,
+          category_level_2,
+          tag_ids,
+          address_zh,
+          address_en,
+          location,
+          business_hours_zh,
+          business_hours_en,
+          intro_zh,
+          intro_en,
+          gallery_media,
+          gallery_urls,
+          is_recommended,
+          recommended_reason_zh,
+          recommended_reason_en,
+          supports_navigation,
+          supports_favorite,
+          supports_share,
+          navigation,
+          share
+        ]
       properties:
         _id:
           type: string
@@ -593,7 +682,7 @@ components:
         cover_url:
           type:
             - string
-            - 'null'
+            - "null"
           format: uri
         category_level_1:
           type: string
@@ -608,7 +697,7 @@ components:
         address_en:
           type: string
         location:
-          $ref: '#/components/schemas/Coordinates'
+          $ref: "#/components/schemas/Coordinates"
         business_hours_zh:
           type: string
         business_hours_en:
@@ -620,7 +709,7 @@ components:
         gallery_media:
           type: array
           items:
-            $ref: '#/components/schemas/PlaceGalleryMedia'
+            $ref: "#/components/schemas/PlaceGalleryMedia"
         gallery_urls:
           type: array
           items:
@@ -631,11 +720,11 @@ components:
         recommended_reason_zh:
           type:
             - string
-            - 'null'
+            - "null"
         recommended_reason_en:
           type:
             - string
-            - 'null'
+            - "null"
         supports_navigation:
           type: boolean
         supports_favorite:
@@ -644,7 +733,8 @@ components:
           type: boolean
         navigation:
           type: object
-          required: [latitude, longitude, name_zh, name_en, address_zh, address_en]
+          required:
+            [latitude, longitude, name_zh, name_en, address_zh, address_en]
           properties:
             latitude:
               type: number
@@ -673,7 +763,7 @@ components:
     PlaceImportReviewMetadata:
       type:
         - object
-        - 'null'
+        - "null"
       properties:
         source_type:
           type: string
@@ -689,11 +779,11 @@ components:
         volunteer_category_raw:
           type:
             - string
-            - 'null'
+            - "null"
         category_code_candidate_raw:
           type:
             - string
-            - 'null'
+            - "null"
         raw_fields:
           type: object
           additionalProperties:
@@ -708,18 +798,25 @@ components:
             type: string
     Place:
       allOf:
-        - $ref: '#/components/schemas/PlaceDetail'
+        - $ref: "#/components/schemas/PlaceDetail"
         - type: object
-          required: [cover_file_id, tencent_map_poi_id, recommended_rank, gallery_file_ids, status]
+          required:
+            [
+              cover_file_id,
+              tencent_map_poi_id,
+              recommended_rank,
+              gallery_file_ids,
+              status
+            ]
           properties:
             cover_file_id:
               type:
                 - string
-                - 'null'
+                - "null"
             tencent_map_poi_id:
               type:
                 - string
-                - 'null'
+                - "null"
             recommended_rank:
               type: integer
               minimum: 0
@@ -731,10 +828,23 @@ components:
               type: string
               enum: [draft, published, offline]
             import_review:
-              $ref: '#/components/schemas/PlaceImportReviewMetadata'
+              $ref: "#/components/schemas/PlaceImportReviewMetadata"
     CreatePlaceInput:
       type: object
-      required: [name_zh, name_en, category_level_1, category_level_2, address_zh, address_en, location, business_hours_zh, business_hours_en, intro_zh, intro_en]
+      required:
+        [
+          name_zh,
+          name_en,
+          category_level_1,
+          category_level_2,
+          address_zh,
+          address_en,
+          location,
+          business_hours_zh,
+          business_hours_en,
+          intro_zh,
+          intro_en
+        ]
       properties:
         name_zh:
           type: string
@@ -743,12 +853,12 @@ components:
         cover_file_id:
           type:
             - string
-            - 'null'
+            - "null"
           default: null
         cover_url:
           type:
             - string
-            - 'null'
+            - "null"
           format: uri
           default: null
         category_level_1:
@@ -765,7 +875,7 @@ components:
         address_en:
           type: string
         location:
-          $ref: '#/components/schemas/Coordinates'
+          $ref: "#/components/schemas/Coordinates"
         business_hours_zh:
           type: string
         business_hours_en:
@@ -777,12 +887,12 @@ components:
         recommended_reason_zh:
           type:
             - string
-            - 'null'
+            - "null"
           default: null
         recommended_reason_en:
           type:
             - string
-            - 'null'
+            - "null"
           default: null
         is_recommended:
           type: boolean
@@ -805,7 +915,7 @@ components:
         tencent_map_poi_id:
           type:
             - string
-            - 'null'
+            - "null"
           default: null
         supports_navigation:
           type: boolean
@@ -821,7 +931,7 @@ components:
           enum: [draft, published, offline]
           default: draft
         import_review:
-          $ref: '#/components/schemas/PlaceImportReviewMetadata'
+          $ref: "#/components/schemas/PlaceImportReviewMetadata"
     UpdatePlaceInput:
       type: object
       description: Partial create place input. All fields from `CreatePlaceInput` are optional.
@@ -833,11 +943,11 @@ components:
         cover_file_id:
           type:
             - string
-            - 'null'
+            - "null"
         cover_url:
           type:
             - string
-            - 'null'
+            - "null"
           format: uri
         category_level_1:
           type: string
@@ -852,7 +962,7 @@ components:
         address_en:
           type: string
         location:
-          $ref: '#/components/schemas/Coordinates'
+          $ref: "#/components/schemas/Coordinates"
         business_hours_zh:
           type: string
         business_hours_en:
@@ -864,11 +974,11 @@ components:
         recommended_reason_zh:
           type:
             - string
-            - 'null'
+            - "null"
         recommended_reason_en:
           type:
             - string
-            - 'null'
+            - "null"
         is_recommended:
           type: boolean
         recommended_rank:
@@ -886,7 +996,7 @@ components:
         tencent_map_poi_id:
           type:
             - string
-            - 'null'
+            - "null"
         supports_navigation:
           type: boolean
         supports_favorite:
@@ -897,10 +1007,30 @@ components:
           type: string
           enum: [draft, published, offline]
         import_review:
-          $ref: '#/components/schemas/PlaceImportReviewMetadata'
+          $ref: "#/components/schemas/PlaceImportReviewMetadata"
+    DeletePlaceResponse:
+      type: object
+      required: [deleted_id]
+      properties:
+        deleted_id:
+          type: string
     Announcement:
       type: object
-      required: [_id, community_id, title_zh, title_en, summary_zh, summary_en, content_zh, content_en, cover_file_id, cover_url, status, published_at]
+      required:
+        [
+          _id,
+          community_id,
+          title_zh,
+          title_en,
+          summary_zh,
+          summary_en,
+          content_zh,
+          content_en,
+          cover_file_id,
+          cover_url,
+          status,
+          published_at
+        ]
       properties:
         _id:
           type: string
@@ -945,7 +1075,17 @@ components:
           type: string
     FileAsset:
       type: object
-      required: [_id, file_id, cloud_path, visibility, biz_type, biz_id, uploaded_by, status]
+      required:
+        [
+          _id,
+          file_id,
+          cloud_path,
+          visibility,
+          biz_type,
+          biz_id,
+          uploaded_by,
+          status
+        ]
       properties:
         _id:
           type: string
@@ -1038,25 +1178,25 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiFailure'
+            $ref: "#/components/schemas/ApiFailure"
     Unauthorized:
       description: Actor cannot be resolved
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiFailure'
+            $ref: "#/components/schemas/ApiFailure"
     Forbidden:
       description: Insufficient permission
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiFailure'
+            $ref: "#/components/schemas/ApiFailure"
     NotFound:
       description: Resource not found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiFailure'
+            $ref: "#/components/schemas/ApiFailure"
 paths:
   /health:
     get:
@@ -1064,7 +1204,7 @@ paths:
       operationId: getHealth
       summary: Health check
       responses:
-        '200':
+        "200":
           description: Service is healthy
           content:
             application/json:
@@ -1096,19 +1236,19 @@ paths:
                   type: string
                   enum: [zh, en]
       responses:
-        '200':
+        "200":
           description: Login session
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/AuthSession'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                        $ref: "#/components/schemas/AuthSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /auth/me:
     get:
       tags: [Auth]
@@ -1117,37 +1257,37 @@ paths:
       security:
         - MockActorHeader: []
       responses:
-        '200':
+        "200":
           description: Current user
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                        $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /events:
     get:
       tags: [Events]
       operationId: listEvents
       summary: List events
       parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - $ref: '#/components/parameters/CommunityId'
-        - $ref: '#/components/parameters/Keyword'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/CommunityId"
+        - $ref: "#/components/parameters/Keyword"
       responses:
-        '200':
+        "200":
           description: Event page
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
@@ -1157,36 +1297,36 @@ paths:
                           items:
                             type: array
                             items:
-                              $ref: '#/components/schemas/Event'
+                              $ref: "#/components/schemas/Event"
                           page:
                             type: integer
                           pageSize:
                             type: integer
                           total:
                             type: integer
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /events/{id}:
     get:
       tags: [Events]
       operationId: getEvent
       summary: Get event detail
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       responses:
-        '200':
+        "200":
           description: Event
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Event'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/Event"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /events/{id}/registrations:
     post:
       tags: [Events]
@@ -1195,29 +1335,29 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateEventRegistrationInput'
+              $ref: "#/components/schemas/CreateEventRegistrationInput"
       responses:
-        '201':
+        "201":
           description: Registration and ticket
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/EventWithRegistration'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                        $ref: "#/components/schemas/EventWithRegistration"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /events/me/registrations:
     get:
       tags: [Events]
@@ -1226,19 +1366,19 @@ paths:
       security:
         - MockActorHeader: []
       responses:
-        '200':
+        "200":
           description: Registrations
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/EventRegistration'
+                          $ref: "#/components/schemas/EventRegistration"
   /events/registrations/{id}/ticket:
     get:
       tags: [Events]
@@ -1247,21 +1387,21 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       responses:
-        '200':
+        "200":
           description: Ticket
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/EventTicket'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/EventTicket"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /admin/events:
     post:
       tags: [Admin, Events]
@@ -1274,23 +1414,23 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateEventInput'
+              $ref: "#/components/schemas/CreateEventInput"
       responses:
-        '201':
+        "201":
           description: Created event
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Event'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                        $ref: "#/components/schemas/Event"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /admin/events/{id}:
     patch:
       tags: [Admin, Events]
@@ -1299,29 +1439,29 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateEventInput'
+              $ref: "#/components/schemas/UpdateEventInput"
       responses:
-        '200':
+        "200":
           description: Updated event
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Event'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/Event"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /admin/events/{id}/review:
     post:
       tags: [Admin, Events]
@@ -1330,29 +1470,29 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReviewEventInput'
+              $ref: "#/components/schemas/ReviewEventInput"
       responses:
-        '200':
+        "200":
           description: Reviewed event
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Event'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/Event"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /admin/events/{id}/checkin:
     post:
       tags: [Admin, Events]
@@ -1361,47 +1501,47 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CheckinInput'
+              $ref: "#/components/schemas/CheckinInput"
       responses:
-        '200':
+        "200":
           description: Checked-in ticket
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/EventTicket'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/EventTicket"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /discover/posts:
     get:
       tags: [Discover]
       operationId: listPosts
       summary: List discover posts
       parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - $ref: '#/components/parameters/CommunityId'
-        - $ref: '#/components/parameters/Keyword'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/CommunityId"
+        - $ref: "#/components/parameters/Keyword"
       responses:
-        '200':
+        "200":
           description: Post page
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
@@ -1411,7 +1551,7 @@ paths:
                           items:
                             type: array
                             items:
-                              $ref: '#/components/schemas/Post'
+                              $ref: "#/components/schemas/Post"
                           page:
                             type: integer
                           pageSize:
@@ -1429,42 +1569,42 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePostInput'
+              $ref: "#/components/schemas/CreatePostInput"
       responses:
-        '201':
+        "201":
           description: Created post
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Post'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                        $ref: "#/components/schemas/Post"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /discover/posts/{id}:
     get:
       tags: [Discover]
       operationId: getPost
       summary: Get post detail
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       responses:
-        '200':
+        "200":
           description: Post
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Post'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/Post"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /discover/posts/{id}/comments:
     post:
       tags: [Discover]
@@ -1473,25 +1613,25 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateCommentInput'
+              $ref: "#/components/schemas/CreateCommentInput"
       responses:
-        '201':
+        "201":
           description: Created comment
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Comment'
+                        $ref: "#/components/schemas/Comment"
   /discover/posts/{id}/report:
     post:
       tags: [Discover]
@@ -1500,25 +1640,25 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReportPostInput'
+              $ref: "#/components/schemas/ReportPostInput"
       responses:
-        '200':
+        "200":
           description: Reported post
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Post'
+                        $ref: "#/components/schemas/Post"
   /admin/discover/posts/{id}/moderation:
     post:
       tags: [Admin, Discover]
@@ -1527,27 +1667,27 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ModeratePostInput'
+              $ref: "#/components/schemas/ModeratePostInput"
       responses:
-        '200':
+        "200":
           description: Moderated post
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Post'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                        $ref: "#/components/schemas/Post"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /places:
     get:
       tags: [Places]
@@ -1555,10 +1695,10 @@ paths:
       summary: List public places
       description: Public list v1 returns card fields only and never returns detail-only fields such as gallery media or navigation.
       parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - $ref: '#/components/parameters/CommunityId'
-        - $ref: '#/components/parameters/Keyword'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/CommunityId"
+        - $ref: "#/components/parameters/Keyword"
         - name: category
           in: query
           schema:
@@ -1578,13 +1718,13 @@ paths:
             enum: [recommended, name]
             default: recommended
       responses:
-        '200':
+        "200":
           description: Place list page
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
@@ -1594,55 +1734,55 @@ paths:
                           items:
                             type: array
                             items:
-                              $ref: '#/components/schemas/PlaceListItem'
+                              $ref: "#/components/schemas/PlaceListItem"
                           page:
                             type: integer
                           pageSize:
                             type: integer
                           total:
                             type: integer
-        '400':
-          $ref: '#/components/responses/BadRequest'
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /places/map-markers:
     get:
       tags: [Places]
       operationId: listPlaceMapMarkers
       summary: List map-safe place markers
       responses:
-        '200':
+        "200":
           description: Marker list
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/PlaceMapMarker'
+                          $ref: "#/components/schemas/PlaceMapMarker"
   /places/{id}:
     get:
       tags: [Places]
       operationId: getPlace
       summary: Get public place detail
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       responses:
-        '200':
+        "200":
           description: Place detail
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/PlaceDetail'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/PlaceDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /admin/places:
     get:
       tags: [Admin, Places]
@@ -1651,13 +1791,13 @@ paths:
       security:
         - MockActorHeader: []
       responses:
-        '200':
+        "200":
           description: Admin place page
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
@@ -1667,15 +1807,15 @@ paths:
                           items:
                             type: array
                             items:
-                              $ref: '#/components/schemas/Place'
+                              $ref: "#/components/schemas/Place"
                           page:
                             type: integer
                           pageSize:
                             type: integer
                           total:
                             type: integer
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        "403":
+          $ref: "#/components/responses/Forbidden"
     post:
       tags: [Admin, Places]
       operationId: adminCreatePlace
@@ -1687,71 +1827,99 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePlaceInput'
+              $ref: "#/components/schemas/CreatePlaceInput"
       responses:
-        '201':
+        "201":
           description: Created place
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Place'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                        $ref: "#/components/schemas/Place"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /admin/places/{id}:
     patch:
       tags: [Admin, Places]
       operationId: adminUpdatePlace
       summary: Update place
+      description: Partial admin update. Omitted fields are preserved; invalid body values return the standard validation error envelope.
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdatePlaceInput'
+              $ref: "#/components/schemas/UpdatePlaceInput"
       responses:
-        '200':
+        "200":
           description: Updated place
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Place'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/Place"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Admin, Places]
+      operationId: adminDeletePlace
+      summary: Delete place
+      description: Admin hard delete. The deleted place is removed from admin reads and from public list, marker, and detail reads.
+      security:
+        - MockActorHeader: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Deleted place id
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/DeletePlaceResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /announcements:
     get:
       tags: [Announcements]
       operationId: listAnnouncements
       summary: List announcements
       parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - $ref: '#/components/parameters/CommunityId'
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/CommunityId"
       responses:
-        '200':
+        "200":
           description: Announcement page
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
@@ -1761,7 +1929,7 @@ paths:
                           items:
                             type: array
                             items:
-                              $ref: '#/components/schemas/Announcement'
+                              $ref: "#/components/schemas/Announcement"
                           page:
                             type: integer
                           pageSize:
@@ -1774,21 +1942,21 @@ paths:
       operationId: getAnnouncement
       summary: Get announcement detail
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       responses:
-        '200':
+        "200":
           description: Announcement
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Announcement'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/Announcement"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /notifications:
     get:
       tags: [Notifications]
@@ -1797,19 +1965,19 @@ paths:
       security:
         - MockActorHeader: []
       responses:
-        '200':
+        "200":
           description: Notification list
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/Notification'
+                          $ref: "#/components/schemas/Notification"
   /notifications/{id}/read:
     post:
       tags: [Notifications]
@@ -1818,27 +1986,27 @@ paths:
       security:
         - MockActorHeader: []
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: "#/components/parameters/Id"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmptyObject'
+              $ref: "#/components/schemas/EmptyObject"
       responses:
-        '200':
+        "200":
           description: Updated notification
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Notification'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                        $ref: "#/components/schemas/Notification"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /files/upload-requests:
     post:
       tags: [Files]
@@ -1852,21 +2020,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUploadRequestInput'
+              $ref: "#/components/schemas/CreateUploadRequestInput"
       responses:
-        '201':
+        "201":
           description: Upload request
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/UploadRequestResponse'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                        $ref: "#/components/schemas/UploadRequestResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /files/complete:
     post:
       tags: [Files]
@@ -1880,21 +2048,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CompleteUploadInput'
+              $ref: "#/components/schemas/CompleteUploadInput"
       responses:
-        '201':
+        "201":
           description: File asset
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/FileAsset'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                        $ref: "#/components/schemas/FileAsset"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /files/private-url:
     post:
       tags: [Files]
@@ -1907,16 +2075,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PrivateUrlRequestInput'
+              $ref: "#/components/schemas/PrivateUrlRequestInput"
       responses:
-        '200':
+        "200":
           description: Private temporary URL
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - $ref: "#/components/schemas/SuccessEnvelope"
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/PrivateUrlResponse'
+                        $ref: "#/components/schemas/PrivateUrlResponse"

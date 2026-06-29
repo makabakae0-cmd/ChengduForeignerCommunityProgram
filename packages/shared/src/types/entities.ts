@@ -15,6 +15,7 @@ import type {
 } from "../schemas/entities";
 import type {
   PlaceDetailSchema,
+  DeletePlaceResponseSchema,
   PlaceGalleryMediaSchema,
   PlaceListItemSchema,
   PlaceMapMarkerSchema
@@ -30,6 +31,7 @@ export type PlaceListItem = z.infer<typeof PlaceListItemSchema>;
 export type PlaceGalleryMedia = z.infer<typeof PlaceGalleryMediaSchema>;
 export type PlaceDetail = z.infer<typeof PlaceDetailSchema>;
 export type PlaceMapMarker = z.infer<typeof PlaceMapMarkerSchema>;
+export type DeletePlaceResponse = z.infer<typeof DeletePlaceResponseSchema>;
 export type Post = z.infer<typeof PostSchema>;
 export type Comment = z.infer<typeof CommentSchema>;
 export type Announcement = z.infer<typeof AnnouncementSchema>;

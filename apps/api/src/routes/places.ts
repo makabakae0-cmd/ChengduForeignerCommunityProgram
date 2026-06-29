@@ -38,22 +38,41 @@ export const registerPlaceRoutes = (router: Router) => {
     }
   );
 
-  router.post("/admin/places", requireRole("community_admin", "system_admin"), async (ctx) => {
-    const input = parseOrThrow(CreatePlaceInputSchema, ctx.request.body);
-    const place = await ctx.state.provider.places.create(input);
-    sendSuccess(ctx, place, 201);
-  });
+  router.post(
+    "/admin/places",
+    requireRole("community_admin", "system_admin"),
+    async (ctx) => {
+      const input = parseOrThrow(CreatePlaceInputSchema, ctx.request.body);
+      const place = await ctx.state.provider.places.create(input);
+      sendSuccess(ctx, place, 201);
+    }
+  );
 
   router.patch(
     "/admin/places/:id",
     requireRole("community_admin", "system_admin"),
     async (ctx) => {
       const input = parseOrThrow(UpdatePlaceInputSchema, ctx.request.body);
-      const place = await ctx.state.provider.places.update(ctx.params.id, input);
+      const place = await ctx.state.provider.places.update(
+        ctx.params.id,
+        input
+      );
       if (!place) {
         throw apiError("NOT_FOUND", "Place not found.", 404);
       }
       sendSuccess(ctx, place);
+    }
+  );
+
+  router.delete(
+    "/admin/places/:id",
+    requireRole("community_admin", "system_admin"),
+    async (ctx) => {
+      const result = await ctx.state.provider.places.delete(ctx.params.id);
+      if (!result) {
+        throw apiError("NOT_FOUND", "Place not found.", 404);
+      }
+      sendSuccess(ctx, result);
     }
   );
 };

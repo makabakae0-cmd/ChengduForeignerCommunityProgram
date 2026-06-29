@@ -1,6 +1,7 @@
 import {
   createHttpClient,
   createMockClient,
+  apiPaths,
   type HttpRequester
 } from "@community-map/shared";
 import { describe, expect, it, vi } from "vitest";
@@ -168,7 +169,9 @@ describe("shared api clients", () => {
     expect(httpResult.success).toBe(true);
     expect(mockResult.data).toHaveProperty("navigation");
     expect(mockResult.data).toHaveProperty("gallery_media");
-    expect(mockResult.data.gallery_media[0].url).toContain("images.unsplash.com");
+    expect(mockResult.data.gallery_media[0].url).toContain(
+      "images.unsplash.com"
+    );
     expect(mockResult.data.gallery_urls).toEqual(
       mockResult.data.gallery_media.map((media) => media.url)
     );
@@ -212,6 +215,39 @@ describe("shared api clients", () => {
     expect(requester).toHaveBeenCalledWith(
       "GET",
       "http://localhost:8787/places?category=public-service&tag=service&page=2&pageSize=5&recommended=true&sort=recommended&keyword=community",
+      undefined,
+      { "x-mock-user-id": "user_001" }
+    );
+  });
+
+  it("keeps mock and http client signatures aligned for admin place delete", async () => {
+    const mockClient = createMockClient({ actorId: "user_001" });
+    const requester = vi.fn(async () => ({
+      success: true,
+      requestId: "req_http_delete_place",
+      data: {
+        deleted_id: "place_http_001"
+      }
+    }));
+    const httpClient = createHttpClient({
+      actorId: "user_001",
+      baseUrl: "http://localhost:8787",
+      requester: requester as unknown as HttpRequester
+    });
+
+    const mockResult = await mockClient.admin.deletePlace("place_003");
+    const httpResult = await httpClient.admin.deletePlace("place_http_001");
+
+    expect(apiPaths.admin.deletePlace("place_http_001")).toBe(
+      "/admin/places/place_http_001"
+    );
+    expect(mockResult.success).toBe(true);
+    expect(mockResult.data.deleted_id).toBe("place_003");
+    expect(httpResult.success).toBe(true);
+    expect(httpResult.data.deleted_id).toBe("place_http_001");
+    expect(requester).toHaveBeenCalledWith(
+      "DELETE",
+      "http://localhost:8787/admin/places/place_http_001",
       undefined,
       { "x-mock-user-id": "user_001" }
     );

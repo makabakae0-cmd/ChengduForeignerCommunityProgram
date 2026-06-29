@@ -60,11 +60,14 @@ const keywordMatch = (value: string | null | undefined, keyword?: string) => {
 const idFrom = (prefix: string) =>
   `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
 
-const shortAddress = (value: string) => value.split("，")[0]?.split(",")[0] ?? value;
+const shortAddress = (value: string) =>
+  value.split("，")[0]?.split(",")[0] ?? value;
 
 const sortPlaces = (items: Place[], sort: PageParams["sort"]) => {
   if (sort === "name") {
-    return [...items].sort((left, right) => left.name_en.localeCompare(right.name_en));
+    return [...items].sort((left, right) =>
+      left.name_en.localeCompare(right.name_en)
+    );
   }
 
   return [...items].sort((left, right) => {
@@ -264,7 +267,9 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
   };
 
   const findUser = (userId?: string) => {
-    const user = state.users.find((item) => item._id === (userId ?? "user_001"));
+    const user = state.users.find(
+      (item) => item._id === (userId ?? "user_001")
+    );
 
     if (!user || user.status !== "active") {
       return null;
@@ -308,7 +313,8 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
         const events = state.events.filter(
           (event) =>
             isLaunchVisibleEvent(event) &&
-            (!params.communityId || event.community_id === params.communityId) &&
+            (!params.communityId ||
+              event.community_id === params.communityId) &&
             (keywordMatch(event.title_zh, params.keyword) ||
               keywordMatch(event.title_en, params.keyword) ||
               keywordMatch(event.summary_zh, params.keyword) ||
@@ -586,7 +592,10 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
               return false;
             }
 
-            if (params.communityId && place.community_id !== params.communityId) {
+            if (
+              params.communityId &&
+              place.community_id !== params.communityId
+            ) {
               return false;
             }
 
@@ -637,15 +646,14 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
               place.status === "published" &&
               hasUsableCoordinates(place)
           )
-        )
-          .map((place) => ({
-            _id: place._id,
-            name_zh: place.name_zh,
-            name_en: place.name_en,
-            category_level_1: place.category_level_1,
-            is_recommended: place.is_recommended,
-            location: place.location
-          }));
+        ).map((place) => ({
+          _id: place._id,
+          name_zh: place.name_zh,
+          name_en: place.name_en,
+          category_level_1: place.category_level_1,
+          is_recommended: place.is_recommended,
+          location: place.location
+        }));
       },
       create(input: Partial<Place>) {
         const place: Place = {
@@ -690,6 +698,17 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
         }
         Object.assign(existing, input);
         return existing;
+      },
+      delete(id: string) {
+        const existingIndex = state.places.findIndex(
+          (place) => place._id === id
+        );
+        if (existingIndex < 0) {
+          return null;
+        }
+
+        state.places.splice(existingIndex, 1);
+        return { deleted_id: id };
       }
     },
     announcements: {

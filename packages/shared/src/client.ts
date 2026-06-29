@@ -2,7 +2,7 @@ import type { CommunityMapApiClient } from "./mock/client";
 
 import { apiPaths } from "./contracts/paths";
 
-type RequestMethod = "GET" | "POST" | "PATCH";
+type RequestMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
 export interface HttpRequester {
   <TResponse>(
@@ -94,7 +94,8 @@ export const createHttpClient = (
         return request("GET", `${apiPaths.discover.listPosts}${suffix}`);
       },
       detailPost: (id) => request("GET", apiPaths.discover.detailPost(id)),
-      createPost: (input) => request("POST", apiPaths.discover.createPost, input),
+      createPost: (input) =>
+        request("POST", apiPaths.discover.createPost, input),
       createComment: (id, input) =>
         request("POST", apiPaths.discover.createComment(id), input)
     },
@@ -117,12 +118,14 @@ export const createHttpClient = (
     files: {
       createUploadRequest: (input) =>
         request("POST", apiPaths.files.createUploadRequest, input),
-      complete: (input) => request("POST", apiPaths.files.completeUpload, input),
+      complete: (input) =>
+        request("POST", apiPaths.files.completeUpload, input),
       privateUrl: (input) => request("POST", apiPaths.files.privateUrl, input)
     },
     admin: {
       listPlaces: () => request("GET", apiPaths.admin.listPlaces),
-      createEvent: (input) => request("POST", apiPaths.admin.createEvent, input),
+      createEvent: (input) =>
+        request("POST", apiPaths.admin.createEvent, input),
       updateEvent: (id, input) =>
         request("PATCH", apiPaths.admin.updateEvent(id), input),
       reviewEvent: (id, input) =>
@@ -131,9 +134,11 @@ export const createHttpClient = (
         request("POST", apiPaths.admin.checkinEvent(id), input),
       moderatePost: (id, input) =>
         request("POST", apiPaths.admin.moderatePost(id), input),
-      createPlace: (input) => request("POST", apiPaths.admin.createPlace, input),
+      createPlace: (input) =>
+        request("POST", apiPaths.admin.createPlace, input),
       updatePlace: (id, input) =>
-        request("PATCH", apiPaths.admin.updatePlace(id), input)
+        request("PATCH", apiPaths.admin.updatePlace(id), input),
+      deletePlace: (id) => request("DELETE", apiPaths.admin.deletePlace(id))
     }
   };
 };

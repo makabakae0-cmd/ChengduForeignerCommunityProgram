@@ -57,12 +57,15 @@ describe("api routes", () => {
     const cloudbaseServer = await createTestBaseUrl();
 
     try {
-      const cloudbaseResponse = await fetch(`${cloudbaseServer.baseUrl}/health`, {
-        headers: {
-          Origin:
-            "https://cloud1-d7gxdk8t43bd639c0-1441004938.tcloudbaseapp.com"
+      const cloudbaseResponse = await fetch(
+        `${cloudbaseServer.baseUrl}/health`,
+        {
+          headers: {
+            Origin:
+              "https://cloud1-d7gxdk8t43bd639c0-1441004938.tcloudbaseapp.com"
+          }
         }
-      });
+      );
 
       expect(
         cloudbaseResponse.headers.get("access-control-allow-origin")
@@ -181,7 +184,9 @@ describe("api routes", () => {
         "images.unsplash.com"
       );
       expect(placeDetailData.data.gallery_urls).toEqual(
-        placeDetailData.data.gallery_media.map((media: { url: string }) => media.url)
+        placeDetailData.data.gallery_media.map(
+          (media: { url: string }) => media.url
+        )
       );
 
       const markersBeforeResponse = await fetch(
@@ -200,7 +205,11 @@ describe("api routes", () => {
       );
       const recommendedData = await recommendedResponse.json();
       expect(recommendedResponse.status).toBe(200);
-      expect(recommendedData.data.items.every((item: { is_recommended: boolean }) => item.is_recommended)).toBe(true);
+      expect(
+        recommendedData.data.items.every(
+          (item: { is_recommended: boolean }) => item.is_recommended
+        )
+      ).toBe(true);
 
       const taggedResponse = await fetch(`${baseUrl}/places?tag=service`);
       const taggedData = await taggedResponse.json();
@@ -278,7 +287,11 @@ describe("api routes", () => {
       });
       const adminPlacesData = await adminPlacesResponse.json();
       expect(adminPlacesResponse.status).toBe(200);
-      expect(adminPlacesData.data.items.some((item: { _id: string }) => item._id === draftPlaceData.data._id)).toBe(true);
+      expect(
+        adminPlacesData.data.items.some(
+          (item: { _id: string }) => item._id === draftPlaceData.data._id
+        )
+      ).toBe(true);
 
       const announcementsResponse = await fetch(`${baseUrl}/announcements`);
       expect(announcementsResponse.status).toBe(200);
@@ -296,7 +309,9 @@ describe("api routes", () => {
       expect(healthResponse.status).toBe(200);
       expect(healthData).toEqual({ ok: true });
 
-      const placesResponse = await fetch(`${baseUrl}/api/places?page=1&pageSize=1`);
+      const placesResponse = await fetch(
+        `${baseUrl}/api/places?page=1&pageSize=1`
+      );
       const placesData = await placesResponse.json();
       expect(placesResponse.status).toBe(200);
       expect(placesData.success).toBe(true);
@@ -342,16 +357,19 @@ describe("api routes", () => {
       expect(response.status).toBe(403);
       expect(body.error.code).toBe("FORBIDDEN");
 
-      const placeGalleryResponse = await fetch(`${baseUrl}/admin/places/place_001`, {
-        method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-          "x-mock-user-id": "user_002"
-        },
-        body: JSON.stringify({
-          gallery_file_ids: ["cloud://forbidden-place-gallery"]
-        })
-      });
+      const placeGalleryResponse = await fetch(
+        `${baseUrl}/admin/places/place_001`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_002"
+          },
+          body: JSON.stringify({
+            gallery_file_ids: ["cloud://forbidden-place-gallery"]
+          })
+        }
+      );
       const placeGalleryBody = await placeGalleryResponse.json();
 
       expect(placeGalleryResponse.status).toBe(403);
@@ -418,20 +436,23 @@ describe("api routes", () => {
       expect(forbiddenUploadRequest.status).toBe(403);
       expect(forbiddenUploadBody.error.code).toBe("FORBIDDEN");
 
-      const forbiddenCompleteResponse = await fetch(`${baseUrl}/files/complete`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-mock-user-id": "user_002"
-        },
-        body: JSON.stringify({
-          biz_type: "place_gallery",
-          biz_id: createPlaceBody.data._id,
-          file_id: forbiddenFileId,
-          cloud_path: forbiddenCloudPath,
-          visibility: "public"
-        })
-      });
+      const forbiddenCompleteResponse = await fetch(
+        `${baseUrl}/files/complete`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_002"
+          },
+          body: JSON.stringify({
+            biz_type: "place_gallery",
+            biz_id: createPlaceBody.data._id,
+            file_id: forbiddenFileId,
+            cloud_path: forbiddenCloudPath,
+            visibility: "public"
+          })
+        }
+      );
       const forbiddenCompleteBody = await forbiddenCompleteResponse.json();
 
       expect(forbiddenCompleteResponse.status).toBe(403);
@@ -566,7 +587,9 @@ describe("api routes", () => {
         )
       ).toBe(true);
 
-      const detailResponse = await fetch(`${baseUrl}/places/${createData.data._id}`);
+      const detailResponse = await fetch(
+        `${baseUrl}/places/${createData.data._id}`
+      );
       const detailData = await detailResponse.json();
 
       expect(detailResponse.status).toBe(200);
@@ -584,6 +607,301 @@ describe("api routes", () => {
             item.category_level_1 === "health-wellness"
         )
       ).toBe(true);
+    } finally {
+      await close();
+    }
+  });
+
+  it("hardens admin place edit and delete routes and visibility", async () => {
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const createResponse = await fetch(`${baseUrl}/admin/places`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-mock-user-id": "user_001"
+        },
+        body: JSON.stringify({
+          name_zh: "生命周期地点",
+          name_en: "Lifecycle Place",
+          cover_file_id: null,
+          cover_url: null,
+          category_level_1: "community",
+          category_level_2: "support-desk",
+          tag_ids: ["community"],
+          address_zh: "成都高新区",
+          address_en: "Chengdu High-tech Zone",
+          location: { latitude: 30.621, longitude: 104.068 },
+          business_hours_zh: "周一至周日",
+          business_hours_en: "Every day",
+          intro_zh: "生命周期测试",
+          intro_en: "Lifecycle test",
+          recommended_reason_zh: null,
+          recommended_reason_en: null,
+          is_recommended: false,
+          recommended_rank: 0,
+          gallery_file_ids: [],
+          gallery_urls: [],
+          tencent_map_poi_id: null,
+          supports_navigation: true,
+          supports_favorite: true,
+          supports_share: true,
+          status: "published"
+        })
+      });
+      const createData = await createResponse.json();
+      const placeId = createData.data._id;
+
+      expect(createResponse.status).toBe(201);
+
+      const unauthorizedEditResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_002"
+          },
+          body: JSON.stringify({
+            name_en: "Unauthorized Edit"
+          })
+        }
+      );
+      const unauthorizedEditBody = await unauthorizedEditResponse.json();
+
+      expect(unauthorizedEditResponse.status).toBe(403);
+      expect(unauthorizedEditBody.success).toBe(false);
+      expect(unauthorizedEditBody.error.code).toBe("FORBIDDEN");
+
+      const invalidEditResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_001"
+          },
+          body: JSON.stringify({
+            category_level_1: "not-a-category"
+          })
+        }
+      );
+      const invalidEditBody = await invalidEditResponse.json();
+
+      expect(invalidEditResponse.status).toBe(400);
+      expect(invalidEditBody.success).toBe(false);
+      expect(invalidEditBody.error.code).toBe("VALIDATION_ERROR");
+
+      const unchangedDetailResponse = await fetch(
+        `${baseUrl}/places/${placeId}`
+      );
+      const unchangedDetailData = await unchangedDetailResponse.json();
+
+      expect(unchangedDetailResponse.status).toBe(200);
+      expect(unchangedDetailData.data.name_en).toBe("Lifecycle Place");
+      expect(unchangedDetailData.data.category_level_1).toBe("community");
+
+      const missingEditResponse = await fetch(
+        `${baseUrl}/admin/places/place_missing_edit`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_001"
+          },
+          body: JSON.stringify({
+            name_en: "Missing Edit"
+          })
+        }
+      );
+      const missingEditBody = await missingEditResponse.json();
+
+      expect(missingEditResponse.status).toBe(404);
+      expect(missingEditBody.error.code).toBe("NOT_FOUND");
+
+      const draftEditResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_001"
+          },
+          body: JSON.stringify({
+            name_en: "Lifecycle Place Draft",
+            tag_ids: ["edited"],
+            status: "draft"
+          })
+        }
+      );
+      const draftEditBody = await draftEditResponse.json();
+
+      expect(draftEditResponse.status).toBe(200);
+      expect(draftEditBody.success).toBe(true);
+      expect(draftEditBody.data._id).toBe(placeId);
+      expect(draftEditBody.data.community_id).toBe("tongzilin");
+      expect(draftEditBody.data.name_zh).toBe("生命周期地点");
+      expect(draftEditBody.data.name_en).toBe("Lifecycle Place Draft");
+      expect(draftEditBody.data.tag_ids).toEqual(["edited"]);
+      expect(draftEditBody.data.address_en).toBe("Chengdu High-tech Zone");
+      expect(draftEditBody.data.status).toBe("draft");
+
+      const publicDraftListResponse = await fetch(
+        `${baseUrl}/places?keyword=Lifecycle%20Place%20Draft`
+      );
+      const publicDraftListBody = await publicDraftListResponse.json();
+      const publicDraftDetailResponse = await fetch(
+        `${baseUrl}/places/${placeId}`
+      );
+      const publicDraftMarkersResponse = await fetch(
+        `${baseUrl}/places/map-markers`
+      );
+      const publicDraftMarkersBody = await publicDraftMarkersResponse.json();
+
+      expect(publicDraftListResponse.status).toBe(200);
+      expect(publicDraftListBody.data.items).toEqual([]);
+      expect(publicDraftListBody.data.total).toBe(0);
+      expect(publicDraftDetailResponse.status).toBe(404);
+      expect(
+        publicDraftMarkersBody.data.some(
+          (item: { _id: string }) => item._id === placeId
+        )
+      ).toBe(false);
+
+      const publishEditResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_001"
+          },
+          body: JSON.stringify({
+            status: "published",
+            category_level_1: "health-wellness",
+            category_level_2: "clinic",
+            recommended_reason_en: "Lifecycle reason",
+            is_recommended: true
+          })
+        }
+      );
+      const publishEditBody = await publishEditResponse.json();
+
+      expect(publishEditResponse.status).toBe(200);
+      expect(publishEditBody.data.status).toBe("published");
+      expect(publishEditBody.data.category_level_1).toBe("health-wellness");
+
+      const publicListResponse = await fetch(
+        `${baseUrl}/places?keyword=Lifecycle%20Place%20Draft`
+      );
+      const publicListBody = await publicListResponse.json();
+      const publicDetailResponse = await fetch(`${baseUrl}/places/${placeId}`);
+      const publicDetailBody = await publicDetailResponse.json();
+      const publicMarkersResponse = await fetch(
+        `${baseUrl}/places/map-markers`
+      );
+      const publicMarkersBody = await publicMarkersResponse.json();
+
+      expect(publicListResponse.status).toBe(200);
+      expect(publicListBody.data.items).toHaveLength(1);
+      expect(publicListBody.data.items[0]).not.toHaveProperty("address_zh");
+      expect(publicListBody.data.items[0]).not.toHaveProperty("gallery_media");
+      expect(publicDetailResponse.status).toBe(200);
+      expect(publicDetailBody.data.category_level_1).toBe("health-wellness");
+      expect(publicDetailBody.data).not.toHaveProperty("import_review");
+      expect(
+        publicMarkersBody.data.some(
+          (item: { _id: string; category_level_1: string }) =>
+            item._id === placeId && item.category_level_1 === "health-wellness"
+        )
+      ).toBe(true);
+      expect(publicMarkersBody.data[0]).not.toHaveProperty("address_zh");
+      expect(publicMarkersBody.data[0]).not.toHaveProperty("gallery_media");
+
+      const unauthorizedDeleteResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "x-mock-user-id": "user_002"
+          }
+        }
+      );
+      const unauthorizedDeleteBody = await unauthorizedDeleteResponse.json();
+
+      expect(unauthorizedDeleteResponse.status).toBe(403);
+      expect(unauthorizedDeleteBody.error.code).toBe("FORBIDDEN");
+      expect((await fetch(`${baseUrl}/places/${placeId}`)).status).toBe(200);
+
+      const missingDeleteResponse = await fetch(
+        `${baseUrl}/admin/places/place_missing_delete`,
+        {
+          method: "DELETE",
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      const missingDeleteBody = await missingDeleteResponse.json();
+
+      expect(missingDeleteResponse.status).toBe(404);
+      expect(missingDeleteBody.error.code).toBe("NOT_FOUND");
+
+      const deleteResponse = await fetch(
+        `${baseUrl}/api/admin/places/${placeId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      const deleteBody = await deleteResponse.json();
+
+      expect(deleteResponse.status).toBe(200);
+      expect(deleteBody.success).toBe(true);
+      expect(deleteBody.data).toEqual({ deleted_id: placeId });
+
+      const repeatDeleteResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      expect(repeatDeleteResponse.status).toBe(404);
+
+      const adminListResponse = await fetch(`${baseUrl}/admin/places`, {
+        headers: {
+          "x-mock-user-id": "user_001"
+        }
+      });
+      const adminListBody = await adminListResponse.json();
+      const deletedListResponse = await fetch(
+        `${baseUrl}/places?keyword=Lifecycle%20Place%20Draft`
+      );
+      const deletedListBody = await deletedListResponse.json();
+      const deletedMarkersResponse = await fetch(
+        `${baseUrl}/places/map-markers`
+      );
+      const deletedMarkersBody = await deletedMarkersResponse.json();
+
+      expect(
+        adminListBody.data.items.some(
+          (item: { _id: string }) => item._id === placeId
+        )
+      ).toBe(false);
+      expect(deletedListBody.data.items).toEqual([]);
+      expect(deletedListBody.data.total).toBe(0);
+      expect(
+        deletedMarkersBody.data.some(
+          (item: { _id: string }) => item._id === placeId
+        )
+      ).toBe(false);
+      expect((await fetch(`${baseUrl}/places/${placeId}`)).status).toBe(404);
     } finally {
       await close();
     }

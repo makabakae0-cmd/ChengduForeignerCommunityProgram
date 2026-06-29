@@ -8,6 +8,7 @@ import type {
   FileAsset,
   Notification,
   Place,
+  DeletePlaceResponse,
   PlaceDetail,
   PlaceListItem,
   PlaceMapMarker,
@@ -138,6 +139,7 @@ export interface CommunityMapApiClient {
     ): Promise<ApiResult<Post>>;
     createPlace(input: Partial<Place>): Promise<ApiResult<Place>>;
     updatePlace(id: string, input: Partial<Place>): Promise<ApiResult<Place>>;
+    deletePlace(id: string): Promise<ApiResult<DeletePlaceResponse>>;
   };
 }
 
@@ -270,6 +272,9 @@ export const createMockClient = (
       },
       async updatePlace(id, input) {
         return ok(service.places.update(id, input) as Place);
+      },
+      async deletePlace(id) {
+        return ok(service.places.delete(id) as DeletePlaceResponse);
       }
     }
   };

@@ -3,7 +3,9 @@ import { createMockService, isMockServiceError } from "@community-map/shared";
 import { apiError } from "../../lib/errors";
 import type { ApiProvider } from "../types";
 
-const withMockErrors = async <TValue>(operation: () => TValue | Promise<TValue>) => {
+const withMockErrors = async <TValue>(
+  operation: () => TValue | Promise<TValue>
+) => {
   try {
     return await operation();
   } catch (error) {
@@ -43,7 +45,9 @@ export const createMockProvider = (): ApiProvider => {
         );
       },
       async listMyRegistrations(actorId) {
-        return withMockErrors(() => service.events.listMyRegistrations(actorId));
+        return withMockErrors(() =>
+          service.events.listMyRegistrations(actorId)
+        );
       },
       async getTicketByRegistration(registrationId, actorId) {
         return withMockErrors(() =>
@@ -103,6 +107,9 @@ export const createMockProvider = (): ApiProvider => {
       },
       async update(id, input) {
         return service.places.update(id, input);
+      },
+      async delete(id) {
+        return service.places.delete(id);
       }
     },
     announcements: {
@@ -118,7 +125,9 @@ export const createMockProvider = (): ApiProvider => {
         return withMockErrors(() => service.notifications.list(actorId));
       },
       async markRead(id, actorId) {
-        return withMockErrors(() => service.notifications.markRead(id, actorId));
+        return withMockErrors(() =>
+          service.notifications.markRead(id, actorId)
+        );
       }
     },
     files: {
