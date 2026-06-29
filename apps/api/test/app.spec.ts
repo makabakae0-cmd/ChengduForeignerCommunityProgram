@@ -27,6 +27,69 @@ const createTestBaseUrl = async () => {
 };
 
 describe("api routes", () => {
+  it("sets local CORS headers without duplicating CloudBase-managed CORS", async () => {
+    const previousDisableAppCors = process.env.DISABLE_APP_CORS;
+    const previousTencentRunEnv = process.env.TENCENTCLOUD_RUNENV;
+    const previousScfFunctionName = process.env.SCF_FUNCTIONNAME;
+
+    delete process.env.DISABLE_APP_CORS;
+    delete process.env.TENCENTCLOUD_RUNENV;
+    delete process.env.SCF_FUNCTIONNAME;
+
+    const localServer = await createTestBaseUrl();
+
+    try {
+      const localResponse = await fetch(`${localServer.baseUrl}/health`, {
+        headers: {
+          Origin:
+            "https://cloud1-d7gxdk8t43bd639c0-1441004938.tcloudbaseapp.com"
+        }
+      });
+
+      expect(localResponse.headers.get("access-control-allow-origin")).toBe(
+        "https://cloud1-d7gxdk8t43bd639c0-1441004938.tcloudbaseapp.com"
+      );
+    } finally {
+      await localServer.close();
+    }
+
+    process.env.TENCENTCLOUD_RUNENV = "SCF";
+    const cloudbaseServer = await createTestBaseUrl();
+
+    try {
+      const cloudbaseResponse = await fetch(`${cloudbaseServer.baseUrl}/health`, {
+        headers: {
+          Origin:
+            "https://cloud1-d7gxdk8t43bd639c0-1441004938.tcloudbaseapp.com"
+        }
+      });
+
+      expect(
+        cloudbaseResponse.headers.get("access-control-allow-origin")
+      ).toBeNull();
+    } finally {
+      await cloudbaseServer.close();
+
+      if (previousDisableAppCors === undefined) {
+        delete process.env.DISABLE_APP_CORS;
+      } else {
+        process.env.DISABLE_APP_CORS = previousDisableAppCors;
+      }
+
+      if (previousTencentRunEnv === undefined) {
+        delete process.env.TENCENTCLOUD_RUNENV;
+      } else {
+        process.env.TENCENTCLOUD_RUNENV = previousTencentRunEnv;
+      }
+
+      if (previousScfFunctionName === undefined) {
+        delete process.env.SCF_FUNCTIONNAME;
+      } else {
+        process.env.SCF_FUNCTIONNAME = previousScfFunctionName;
+      }
+    }
+  });
+
   it("serves events list, detail, registration, posts, places, announcements, and validation errors", async () => {
     const { baseUrl, close } = await createTestBaseUrl();
 
