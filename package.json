@@ -1,0 +1,28 @@
+{
+  "name": "chengdu-foreigner-community-program",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.6.5",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev:mobile": "corepack pnpm --filter @community-map/mobile dev:h5",
+    "dev:mobile:mp": "corepack pnpm --filter @community-map/mobile dev:mp-weixin",
+    "dev:admin": "corepack pnpm --filter @community-map/admin dev",
+    "dev:api": "corepack pnpm --filter @community-map/api dev",
+    "typecheck": "corepack pnpm -r --if-present typecheck",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@eslint/js": "^9.23.0",
+    "eslint": "^9.23.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.28.0",
+    "vitest": "^3.0.9"
+  }
+}

@@ -1,286 +1,264 @@
 # Chengdu Foreigner Community Program
 
-基于 **uni-app（前端） + NestJS（后端）** 的社区服务小程序项目，聚焦以下核心能力：
+一个基于 `pnpm` workspace 的社区项目，当前包含：
 
-- 首页信息流（帖子 + 活动卡片）
-- 本地地标服务（详情、评价、导航、收藏）
-- 社区活动（列表、详情、报名、核销、回顾）
-- 社区互动（发帖、评论、点赞、分享）
-- 公告与消息通知
-- 管理员后台（活动管理、审核、数据统计）
+- `apps/admin`: 后台管理端，Vue + Vite
+- `apps/mobile`: 移动端/H5，uni-app + Vue
+- `apps/api`: API 服务，TypeScript
+- `packages/shared`: 共享 schema、contract、mock client、测试夹具
 
----
+## 环境要求
 
-## 1. 技术栈
+- Node.js `>= 20`
+- `pnpm@10.6.5`
 
-### 前端（用户端）
-- 框架：`uni-app`（Vue 3）
-- 目标端：微信小程序（可扩展 H5）
-- 状态管理：`pinia`
-- 网络请求：`uni.request`（封装 request 模块）
-- 国际化：`vue-i18n`
-- UI：`uv-ui` 或 `uni-ui`（按团队习惯选一套）
+推荐用 `corepack`：
 
-### 后端
-- 框架：`NestJS`
-- 接口风格：`RESTful API`
-- 数据库：`PostgreSQL`（推荐）
-- ORM：`Prisma` 或 `TypeORM`（建议 Prisma）
-- 缓存：`Redis`
-- 鉴权：`JWT`
-- 文档：`Swagger`
+```bash
+corepack enable
+pnpm --version
+node --version
+```
 
-### 管理后台（建议）
-- `Vue3 + Vite + Element Plus`
-- 对接同一套 NestJS API
+安装依赖：
 
----
+```bash
+pnpm install
+```
 
-## 2. 推荐目录结构
+## 目录结构
 
 ```text
 .
-├── mobile/                    # uni-app 用户端
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── home/
-│   │   │   ├── event/
-│   │   │   ├── landmark/
-│   │   │   └── profile/
-│   │   ├── components/
-│   │   ├── stores/
-│   │   ├── services/
-│   │   ├── i18n/
-│   │   └── utils/
-│   └── package.json
-│
-├── server/                    # NestJS API
-│   ├── src/
-│   │   ├── modules/
-│   │   │   ├── auth/
-│   │   │   ├── users/
-│   │   │   ├── events/
-│   │   │   ├── posts/
-│   │   │   ├── landmarks/
-│   │   │   ├── announcements/
-│   │   │   └── notifications/
-│   │   ├── common/
-│   │   └── main.ts
-│   ├── prisma/
-│   └── package.json
-│
-├── admin/                     # 管理后台（可后续建立）
-└── README.md
+├── apps/
+│   ├── admin/
+│   ├── api/
+│   └── mobile/
+├── packages/
+│   └── shared/
+├── openspec/
+└── auto_test_openspec/
 ```
 
----
+## 如何运行
 
-## 3. 当前分工：Event 模块（你负责）
+### 1. 运行后台管理端
 
-你可以按下面顺序推进，先保证最小闭环：
-
-1. 活动列表
-- Tab：`全部 / 本周 / 即将开始 / 我的`
-- 支持分页、状态筛选（报名中/进行中/已结束）
-
-2. 活动详情
-- 时间、地点、主办方、费用、名额、流程
-- 状态显示（可报名/已满/已结束）
-
-3. 活动报名
-- 表单：姓名、电话
-- 限制重复报名
-- 并发下名额不超卖（事务）
-
-4. 活动凭证
-- 报名成功后生成二维码
-- 后台扫码核销，核销幂等
-
-5. 活动通知
-- 报名成功提醒
-- 开始前提醒
-- 活动变更提醒
-
-6. 活动回顾
-- 活动结束后展示图文/视频回顾
-
----
-
-## 4. Event 数据模型（建议）
-
-### events
-- `id` (uuid)
-- `title`
-- `cover_url`
-- `start_time`
-- `end_time`
-- `location_name`
-- `location_address`
-- `organizer`
-- `capacity_total`
-- `fee`
-- `status` (`open` | `ongoing` | `ended` | `cancelled`)
-- `agenda_json`
-- `content`
-- `published`
-- `created_at`
-- `updated_at`
-
-### event_registrations
-- `id` (uuid)
-- `event_id`
-- `user_id`
-- `name`
-- `phone`
-- `status` (`registered` | `checked_in` | `cancelled`)
-- `voucher_token`
-- `checked_in_at`
-- `created_at`
-
-### event_reviews
-- `id` (uuid)
-- `event_id`
-- `content`
-- `media_urls`
-- `created_at`
-
-### event_notifications
-- `id` (uuid)
-- `event_id`
-- `user_id`
-- `type` (`register_success` | `before_start` | `event_changed`)
-- `payload_json`
-- `read`
-- `created_at`
-
----
-
-## 5. Event API（MVP）
-
-### 用户端
-- `GET /events`：活动列表（分页 + tab/filter）
-- `GET /events/:id`：活动详情
-- `POST /events/:id/register`：活动报名
-- `GET /me/event-registrations`：我的报名列表
-- `GET /events/:id/voucher`：报名凭证二维码
-- `GET /events/:id/review`：活动回顾
-
-### 管理端
-- `POST /admin/events`：创建活动
-- `PATCH /admin/events/:id`：编辑活动
-- `DELETE /admin/events/:id`：删除活动
-- `GET /admin/events/:id/registrations`：报名名单
-- `POST /admin/events/check-in`：扫码核销
-
----
-
-## 6. 开发环境与启动
-
-> 以下命令为推荐标准流程，实际以你们创建后的子项目脚本为准。
-
-### 6.1 启动后端（NestJS）
+默认使用 mock client。
 
 ```bash
-cd server
-npm install
-npm run start:dev
+pnpm dev:admin
 ```
 
-如果使用 Prisma：
+默认地址：
+
+- `http://localhost:5173`
+
+如果你要让后台走真实 HTTP API，而不是 mock：
 
 ```bash
-npx prisma migrate dev
-npx prisma studio
+VITE_API_MODE=http \
+VITE_API_BASE_URL=http://127.0.0.1:8787 \
+pnpm --filter @community-map/admin dev
 ```
 
-### 6.2 启动前端（uni-app）
+### 2. 运行移动端 H5
+
+默认使用 mock client。
 
 ```bash
-cd mobile
-npm install
-npm run dev:mp-weixin
+pnpm dev:mobile
 ```
 
-`dev:mp-weixin` 会持续监听并输出微信小程序产物到仓库根目录的 `mp-weixin`。
+默认地址：
 
-微信开发者工具有两种导入方式：
+- `http://localhost:5174`
 
-- 推荐：直接导入 `mp-weixin`
-- 也可以导入仓库根目录，根目录 `project.config.json` 已通过 `miniprogramRoot` 指向 `mp-weixin/`
-
-当前开发阶段使用微信测试号 `touristappid`，暂不使用真实 AppID。打开项目后建议在开发者工具详情中勾选「不校验合法域名、web-view、TLS 版本以及 HTTPS 证书」，本地 API 联调才不会被域名校验拦截。
-
-正式构建可执行：
+如果你要让移动端走真实 HTTP API：
 
 ```bash
-cd mobile
-npm run build:mp-weixin
+VITE_API_MODE=http \
+VITE_API_BASE_URL=http://127.0.0.1:8787 \
+pnpm --filter @community-map/mobile dev:h5
 ```
 
-对应生产构建目录为 `mobile/dist/build/mp-weixin`。
+### 3. 运行微信小程序开发模式
 
----
-
-## 7. 环境变量建议
-
-### server/.env
-
-```env
-PORT=3000
-DATABASE_URL=postgresql://user:password@localhost:5432/community
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=replace_me
-WECHAT_APPID=replace_me
-WECHAT_SECRET=replace_me
+```bash
+pnpm dev:mobile:mp
 ```
 
-### mobile/.env.development
+微信小程序端 UI 组件库默认使用 TDesign MiniProgram，规范入口见 `docs/ui-guidelines.md`。新增小程序页面、表单、弹窗、按钮、列表、Toast、Tab、空状态和加载状态时，应优先使用或参考 TDesign MiniProgram。
 
-```env
-VITE_API_BASE_URL=http://127.0.0.1:3000/api
+### 4. 运行 API
+
+标准开发命令：
+
+```bash
+pnpm dev:api
 ```
 
-如果不配置该变量，前端默认也会请求 `http://127.0.0.1:3000/api`。真机预览或上线时不能使用 `127.0.0.1`，需要替换为已备案并配置到微信后台的 HTTPS 域名。
+默认地址：
 
----
+- `http://localhost:8787`
 
-## 8. 关键业务规则（Event）
+CloudBase 函数框架开发命令：
 
-- 同一用户同一活动不可重复报名
-- 已满员或已结束活动不可报名
-- 报名与扣减名额必须在同一事务中
-- 核销接口必须幂等，避免重复核销
-- 活动变更需触发通知给已报名用户
+```bash
+pnpm --filter @community-map/api dev:cloudbase
+```
 
----
+健康检查：
 
-## 9. 测试清单（交付前）
+```bash
+curl http://127.0.0.1:8787/health
+```
 
-- 列表筛选与分页准确
-- 详情字段完整并正确展示
-- 并发报名不超卖
-- 重复报名被正确拦截
-- 凭证二维码可识别、可核销、不可重复核销
-- 我的报名状态流转正确（待参加 -> 已结束/已核销）
+说明：
 
----
+- `apps/admin` 和 `apps/mobile` 默认都会退回到 mock 模式。
+- 要做联调，除了启动 API，还需要显式设置 `VITE_API_MODE=http` 和 `VITE_API_BASE_URL=http://127.0.0.1:8787`。
+- 当前仓库没有成型的浏览器自动化 E2E 套件，跨端验收主要依赖手动或 MCP 驱动的联调。
 
-## 10. 里程碑建议
+## 常用开发命令
 
-### M1（1 周）
-- Event 列表 + 详情 + 报名
-- 管理端活动创建 + 名单查看
+根目录：
 
-### M2（1 周）
-- 凭证二维码 + 核销
-- 活动提醒通知
+```bash
+pnpm dev:admin
+pnpm dev:mobile
+pnpm dev:api
+pnpm test
+pnpm typecheck
+pnpm lint
+```
 
-### M3（1 周）
-- 活动回顾
-- 首页活动卡片联动 + 数据优化
+按包运行：
 
----
+```bash
+pnpm --filter @community-map/admin dev
+pnpm --filter @community-map/mobile dev:h5
+pnpm --filter @community-map/mobile dev:mp-weixin
+pnpm --filter @community-map/api dev
+pnpm --filter @community-map/shared typecheck
+```
 
-## 11. License
+## 如何测试
 
-本项目遵循仓库中的 [LICENSE](./LICENSE)。
+### 1. 运行单元测试
+
+根目录：
+
+```bash
+pnpm test
+```
+
+当前测试主要覆盖：
+
+- `apps/api/test`
+- `packages/shared/test`
+
+如果只想跑 API 测试：
+
+```bash
+./node_modules/.bin/vitest run apps/api/test/app.spec.ts apps/api/test/cloudbase.spec.ts
+```
+
+如果只想跑 shared 测试：
+
+```bash
+./node_modules/.bin/vitest run \
+  packages/shared/test/contracts.spec.ts \
+  packages/shared/test/client.spec.ts \
+  packages/shared/test/places-marker-contract.spec.ts
+```
+
+### 2. 运行类型检查
+
+全仓：
+
+```bash
+pnpm typecheck
+```
+
+按包：
+
+```bash
+pnpm --filter @community-map/api typecheck
+pnpm --filter @community-map/admin typecheck
+pnpm --filter @community-map/mobile typecheck
+pnpm --filter @community-map/shared typecheck
+```
+
+### 3. 运行 lint
+
+```bash
+pnpm lint
+```
+
+### 4. OpenSpec 校验
+
+如果你在做变更提案或按 OpenSpec 交付：
+
+```bash
+openspec validate <change-name> --strict --no-interactive
+```
+
+例如：
+
+```bash
+openspec validate stabilize-places-map-v1-and-admin-metadata --strict --no-interactive
+```
+
+### 5. 手动端到端测试
+
+当前推荐的手动链路：
+
+1. 启动 API。
+2. 用 HTTP 模式启动 Admin。
+3. 用 HTTP 模式启动 Mobile H5。
+4. 在 Admin 创建或编辑数据。
+5. 在 Mobile 列表页、地图页、详情页验证公开端表现。
+
+示例：
+
+```bash
+# 终端 1
+pnpm dev:api
+
+# 终端 2
+VITE_API_MODE=http \
+VITE_API_BASE_URL=http://127.0.0.1:8787 \
+pnpm --filter @community-map/admin dev
+
+# 终端 3
+VITE_API_MODE=http \
+VITE_API_BASE_URL=http://127.0.0.1:8787 \
+pnpm --filter @community-map/mobile dev:h5
+```
+
+重点建议验证：
+
+- Admin 创建/更新后，公开列表是否可见
+- 地图 marker 是否只返回 marker-safe 字段
+- 地图摘要卡是否不触发 detail fetch
+- 从地图或列表进入详情页是否命中正确 place id
+- `published` / `draft` 状态是否影响公开可见性
+
+## 共享环境变量
+
+Admin 和 Mobile 当前都识别这些环境变量：
+
+- `VITE_API_MODE`
+  - `mock`
+  - `http`
+- `VITE_API_BASE_URL`
+  - 默认 `http://localhost:8787`
+- `VITE_MOCK_ACTOR_ID`
+  - 默认 `user_001`
+
+## 备注
+
+- 根目录存在 `auto_test_openspec/`，用于保存 OpenSpec 验证 bundle。
+- 根目录存在 `openspec/`，用于变更提案、设计、任务和规范增量。
+- 如果你是在做较大变更，先阅读 `AGENTS.md`。

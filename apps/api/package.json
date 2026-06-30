@@ -1,0 +1,27 @@
+{
+  "name": "@community-map/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/dev.ts",
+    "dev:cloudbase": "tcb-ff --source src/cloudbase.ts --target main",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cloudbase/functions-framework": "^1.0.0",
+    "@cloudbase/node-sdk": "^3.18.1",
+    "@community-map/shared": "workspace:*",
+    "@koa/router": "^13.1.0",
+    "koa": "^2.16.1",
+    "koa-bodyparser": "^4.4.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.15.0",
+    "@types/koa-bodyparser": "^4.3.12",
+    "@types/koa__router": "^12.0.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
