@@ -12,6 +12,8 @@ import {
   PlaceListItemSchema,
   PlaceListQuerySchema,
   PlaceMapMarkerSchema,
+  PlacePoiSearchItemSchema,
+  PlacePoiSearchQuerySchema,
   PlaceSchema,
   placeContracts,
   PostSchema,
@@ -200,6 +202,43 @@ describe("shared contracts", () => {
       "/admin/places/place_001"
     );
     expect(deleteEnvelope.data.deleted_id).toBe("place_001");
+  });
+
+  it("normalizes admin place POI search contracts", () => {
+    const query = PlacePoiSearchQuerySchema.parse({
+      keyword: " 桐梓林 "
+    });
+    const item = PlacePoiSearchItemSchema.parse({
+      id: "poi_001",
+      title: "桐梓林",
+      address: "四川省成都市武侯区桐梓林路",
+      category: "交通设施",
+      location: {
+        latitude: 30.615,
+        longitude: 104.062
+      },
+      province: "四川省",
+      city: "成都市",
+      district: "武侯区"
+    });
+
+    expect(query.keyword).toBe("桐梓林");
+    expect(item.location.latitude).toBe(30.615);
+    expect(placeContracts.adminPoiSearch).toMatchObject({
+      method: "GET",
+      path: "/admin/places/poi-search"
+    });
+    expect(apiPaths.admin.searchPlacePoi).toBe("/admin/places/poi-search");
+    expect(() => PlacePoiSearchQuerySchema.parse({ keyword: "" })).toThrow();
+    expect(() =>
+      PlacePoiSearchItemSchema.parse({
+        ...item,
+        location: {
+          latitude: 999,
+          longitude: 104.062
+        }
+      })
+    ).toThrow();
   });
 
   it("keeps admin place updates partial and rejects invalid editable fields", () => {

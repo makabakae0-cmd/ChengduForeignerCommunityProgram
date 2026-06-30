@@ -12,6 +12,7 @@ import type {
   PlaceDetail,
   PlaceListItem,
   PlaceMapMarker,
+  PlacePoiSearchItem,
   Post
 } from "../types/entities";
 import type { ApiResult, PageResult } from "../types/common";
@@ -140,6 +141,9 @@ export interface CommunityMapApiClient {
     createPlace(input: Partial<Place>): Promise<ApiResult<Place>>;
     updatePlace(id: string, input: Partial<Place>): Promise<ApiResult<Place>>;
     deletePlace(id: string): Promise<ApiResult<DeletePlaceResponse>>;
+    searchPlacePoi(input: {
+      keyword: string;
+    }): Promise<ApiResult<PlacePoiSearchItem[]>>;
   };
 }
 
@@ -275,6 +279,49 @@ export const createMockClient = (
       },
       async deletePlace(id) {
         return ok(service.places.delete(id) as DeletePlaceResponse);
+      },
+      async searchPlacePoi(input) {
+        return ok([
+          {
+            id: `mock_poi_${encodeURIComponent(input.keyword)}`,
+            title: input.keyword,
+            address: "四川省成都市武侯区桐梓林路",
+            category: "生活服务",
+            location: {
+              latitude: 30.615,
+              longitude: 104.062
+            },
+            province: "四川省",
+            city: "成都市",
+            district: "武侯区"
+          },
+          {
+            id: `mock_poi_${encodeURIComponent(input.keyword)}_metro`,
+            title: `${input.keyword} A口`,
+            address: "四川省成都市武侯区人民南路四段",
+            category: "交通设施",
+            location: {
+              latitude: 30.6162,
+              longitude: 104.0634
+            },
+            province: "四川省",
+            city: "成都市",
+            district: "武侯区"
+          },
+          {
+            id: `mock_poi_${encodeURIComponent(input.keyword)}_business`,
+            title: `${input.keyword} 商圈`,
+            address: "四川省成都市武侯区桐梓林东路",
+            category: "商务住宅",
+            location: {
+              latitude: 30.6143,
+              longitude: 104.0608
+            },
+            province: "四川省",
+            city: "成都市",
+            district: "武侯区"
+          }
+        ]);
       }
     }
   };

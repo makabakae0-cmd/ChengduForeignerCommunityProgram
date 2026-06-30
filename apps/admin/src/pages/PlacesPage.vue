@@ -6,7 +6,9 @@ import {
   PLACE_STATUSES,
   PLACE_TOP_LEVEL_CATEGORIES,
   UpdatePlaceInputSchema,
-  type Place
+  type ApiFailureResult,
+  type Place,
+  type PlacePoiSearchItem
 } from "@community-map/shared";
 
 import { FILE_PATH_RULES, adminApi } from "@/api/client";
@@ -18,6 +20,10 @@ const registeringGallery = ref(false);
 const editingId = ref<string | null>(null);
 const deletingId = ref<string | null>(null);
 const submittingError = ref("");
+const poiKeyword = ref("");
+const poiSearching = ref(false);
+const poiResults = ref<PlacePoiSearchItem[]>([]);
+const poiError = ref("");
 
 const categoryOptions = PLACE_TOP_LEVEL_CATEGORIES.map((value) => ({
   value,
@@ -114,6 +120,15 @@ const issueMessage = (issue: {
   issue.path.length > 0
     ? `${issue.path.join(".")}: ${issue.message}`
     : issue.message;
+
+const isApiFailureResult = (value: unknown): value is ApiFailureResult => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  return record.success === false && typeof record.error === "object";
+};
 
 const fillForm = (place?: Place) => {
   Object.assign(form, createEmptyForm());
@@ -246,6 +261,86 @@ const quickPublish = async (place: Place, status: Place["status"]) => {
   await load();
 };
 
+const searchPoi = async () => {
+  const keyword = poiKeyword.value.trim();
+
+  if (!keyword) {
+    ElMessage.warning("请输入地标或地址关键词。");
+    return;
+  }
+
+  poiSearching.value = true;
+  poiError.value = "";
+
+  try {
+    const result = (await adminApi.admin.searchPlacePoi({
+      keyword
+    })) as unknown;
+
+    if (isApiFailureResult(result)) {
+      poiResults.value = [];
+      poiError.value = result.error.message;
+      ElMessage.error(result.error.message);
+      return;
+    }
+
+    const successResult = result as { data: PlacePoiSearchItem[] };
+    poiResults.value = successResult.data;
+
+    if (successResult.data.length === 0) {
+      poiError.value = "未找到匹配地标。";
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "地标搜索失败。";
+    poiResults.value = [];
+    poiError.value = message;
+    ElMessage.error(message);
+  } finally {
+    poiSearching.value = false;
+  }
+};
+
+const hasManualPlaceLookupFields = () => {
+  const emptyForm = createEmptyForm();
+
+  return (
+    editingId.value !== null ||
+    form.name_zh !== emptyForm.name_zh ||
+    form.address_zh !== emptyForm.address_zh ||
+    form.tencent_map_poi_id !== emptyForm.tencent_map_poi_id ||
+    Number(form.latitude) !== emptyForm.latitude ||
+    Number(form.longitude) !== emptyForm.longitude
+  );
+};
+
+const selectPoi = async (item: PlacePoiSearchItem) => {
+  if (hasManualPlaceLookupFields()) {
+    try {
+      await ElMessageBox.confirm(
+        "选中地标会覆盖中文名、中文地址、经纬度和腾讯 POI ID。",
+        "填充地标信息",
+        {
+          confirmButtonText: "填充",
+          cancelButtonText: "取消",
+          type: "warning"
+        }
+      );
+    } catch {
+      return;
+    }
+  }
+
+  form.name_zh = item.title;
+  form.address_zh = item.address;
+  form.latitude = item.location.latitude;
+  form.longitude = item.location.longitude;
+  form.tencent_map_poi_id = item.id;
+  poiKeyword.value = item.title;
+  poiResults.value = [];
+  poiError.value = "";
+  ElMessage.success("已填充腾讯地图地标信息。");
+};
+
 const deletePlace = async (place: Place) => {
   try {
     await ElMessageBox.confirm(
@@ -343,6 +438,43 @@ onMounted(async () => {
     <div class="editor-grid">
       <div class="editor-card">
         <h3>{{ editingId ? "编辑地点" : "新建地点" }}</h3>
+        <div class="poi-search-panel">
+          <div class="poi-search-row">
+            <el-input
+              v-model="poiKeyword"
+              placeholder="搜索地标/地址，例如 桐梓林地铁站"
+              clearable
+              @keyup.enter="searchPoi"
+            />
+            <el-button
+              type="primary"
+              :loading="poiSearching"
+              @click="searchPoi"
+            >
+              搜索地标
+            </el-button>
+          </div>
+          <div v-if="poiError" class="hint-text">{{ poiError }}</div>
+          <div v-if="poiResults.length" class="poi-result-list">
+            <button
+              v-for="item in poiResults"
+              :key="item.id"
+              type="button"
+              class="poi-result-item"
+              @click="selectPoi(item)"
+            >
+              <span class="poi-result-title">{{ item.title }}</span>
+              <span class="poi-result-address">
+                {{ item.address || "暂无地址" }}
+              </span>
+              <span class="poi-result-meta">
+                {{ item.district || item.city || "成都" }} ·
+                {{ item.location.latitude.toFixed(6) }},
+                {{ item.location.longitude.toFixed(6) }}
+              </span>
+            </button>
+          </div>
+        </div>
         <div class="form-grid">
           <el-input v-model="form.name_zh" placeholder="中文名" />
           <el-input v-model="form.name_en" placeholder="英文名" />
@@ -544,6 +676,56 @@ onMounted(async () => {
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   background: #f8fafc;
+}
+
+.poi-search-panel {
+  margin-bottom: 16px;
+}
+
+.poi-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.poi-result-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.poi-result-item {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1.3fr) minmax(
+      140px,
+      0.8fr
+    );
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  color: #1f2937;
+  text-align: left;
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.poi-result-item:hover {
+  border-color: #409eff;
+}
+
+.poi-result-title {
+  font-weight: 600;
+}
+
+.poi-result-address,
+.poi-result-meta {
+  overflow-wrap: anywhere;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .form-grid {

@@ -138,7 +138,11 @@ export const createHttpClient = (
         request("POST", apiPaths.admin.createPlace, input),
       updatePlace: (id, input) =>
         request("PATCH", apiPaths.admin.updatePlace(id), input),
-      deletePlace: (id) => request("DELETE", apiPaths.admin.deletePlace(id))
+      deletePlace: (id) => request("DELETE", apiPaths.admin.deletePlace(id)),
+      searchPlacePoi: (input) => {
+        const suffix = buildQuerySuffix(input);
+        return request("GET", `${apiPaths.admin.searchPlacePoi}${suffix}`);
+      }
     }
   };
 };

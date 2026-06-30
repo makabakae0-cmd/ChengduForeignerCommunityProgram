@@ -252,4 +252,48 @@ describe("shared api clients", () => {
       { "x-mock-user-id": "user_001" }
     );
   });
+
+  it("serializes admin place POI search through shared client", async () => {
+    const mockClient = createMockClient({ actorId: "user_001" });
+    const requester = vi.fn(async () => ({
+      success: true,
+      requestId: "req_http_poi_search",
+      data: [
+        {
+          id: "poi_http_001",
+          title: "桐梓林",
+          address: "四川省成都市武侯区桐梓林路",
+          category: "交通设施",
+          location: {
+            latitude: 30.615,
+            longitude: 104.062
+          },
+          province: "四川省",
+          city: "成都市",
+          district: "武侯区"
+        }
+      ]
+    }));
+    const httpClient = createHttpClient({
+      actorId: "user_001",
+      baseUrl: "http://localhost:8787",
+      requester: requester as unknown as HttpRequester
+    });
+
+    const mockResult = await mockClient.admin.searchPlacePoi({
+      keyword: "桐梓林"
+    });
+    const httpResult = await httpClient.admin.searchPlacePoi({
+      keyword: "桐梓林"
+    });
+
+    expect(mockResult.data[0].title).toBe("桐梓林");
+    expect(httpResult.data[0].id).toBe("poi_http_001");
+    expect(requester).toHaveBeenCalledWith(
+      "GET",
+      "http://localhost:8787/admin/places/poi-search?keyword=%E6%A1%90%E6%A2%93%E6%9E%97",
+      undefined,
+      { "x-mock-user-id": "user_001" }
+    );
+  });
 });

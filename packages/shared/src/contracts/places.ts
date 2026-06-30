@@ -8,6 +8,8 @@ import {
   PlaceListItemSchema,
   PlaceListQuerySchema,
   PlaceMapMarkerSchema,
+  PlacePoiSearchQuerySchema,
+  PlacePoiSearchResponseSchema,
   UpdatePlaceInputSchema
 } from "../schemas/places";
 import { PlaceSchema } from "../schemas/entities";
@@ -33,6 +35,12 @@ export const placeContracts = {
     method: "GET",
     path: "/admin/places",
     response: PlaceSchema
+  }),
+  adminPoiSearch: defineContract({
+    method: "GET",
+    path: "/admin/places/poi-search",
+    request: PlacePoiSearchQuerySchema,
+    response: PlacePoiSearchResponseSchema
   }),
   adminCreate: defineContract({
     method: "POST",

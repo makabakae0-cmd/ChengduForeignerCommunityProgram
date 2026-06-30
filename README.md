@@ -343,6 +343,15 @@ Admin 和 Mobile 当前都识别这些环境变量：
 - `VITE_MOCK_ACTOR_ID`
   - 默认 `user_001`
 
+API 端地点搜索使用这些环境变量：
+
+- `TENCENT_MAP_KEY`
+  - 腾讯位置服务 WebServiceAPI key，用于 Admin 地点表单的“搜索地标/地址”。
+- `TENCENT_MAP_SECRET_KEY`
+  - 可选。开启腾讯位置服务 SN 校验后填写 SecretKey/SK，API 会在服务端生成 `sig`。
+
+腾讯地图 key 不要写入 Admin 的 `VITE_` 环境变量。Admin 通过 `GET /admin/places/poi-search` 调用 API 代理，key 只保存在本地 API 进程或 CloudBase `community-map-api` 函数环境变量中。CloudBase dev 部署时需要在保留 `API_PROVIDER=cloudbase`、`CLOUDBASE_PROVIDER_MODE=live`、`CLOUDBASE_ENV_ID=cloud1-d7gxdk8t43bd639c0` 的基础上追加上述 key。
+
 ## 备注
 
 - 根目录存在 `auto_test_openspec/`，用于保存 OpenSpec 验证 bundle。

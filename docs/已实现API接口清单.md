@@ -84,6 +84,7 @@ Discover public reads 只返回 `status="visible"` 且 `review_status="visible"`
 | `GET`    | `/places/map-markers` | 获取地图标记点列表                                     | `apps/api/src/routes/places.ts` | `packages/shared/src/contracts/places.ts` | `packages/shared/src/mock/service.ts` 中 `places.mapMarkers` | 已实现         |
 | `GET`    | `/places/:id`         | 获取地点详情                                           | `apps/api/src/routes/places.ts` | `packages/shared/src/contracts/places.ts` | `packages/shared/src/mock/service.ts` 中 `places.detail`     | 已实现         |
 | `GET`    | `/admin/places`       | 管理端地点列表                                         | `apps/api/src/routes/places.ts` | `packages/shared/src/contracts/places.ts` | `packages/shared/src/mock/service.ts` 中 `places.listAdmin`  | 已实现         |
+| `GET`    | `/admin/places/poi-search` | 管理端腾讯地图 POI 搜索                         | `apps/api/src/routes/places.ts` | `packages/shared/src/contracts/places.ts` | `apps/api/src/lib/tencent-map.ts` 调用腾讯位置服务 WebServiceAPI | 已实现（需配置腾讯地图 key） |
 | `POST`   | `/admin/places`       | 管理端新建地点                                         | `apps/api/src/routes/places.ts` | `packages/shared/src/contracts/places.ts` | `packages/shared/src/mock/service.ts` 中 `places.create`     | 已实现         |
 | `PATCH`  | `/admin/places/:id`   | 管理端更新地点                                         | `apps/api/src/routes/places.ts` | `packages/shared/src/contracts/places.ts` | `packages/shared/src/mock/service.ts` 中 `places.update`     | 已实现         |
 | `DELETE` | `/admin/places/:id`   | 管理端删除地点                                         | `apps/api/src/routes/places.ts` | `packages/shared/src/contracts/places.ts` | `packages/shared/src/mock/service.ts` 中 `places.delete`     | 已实现         |
@@ -98,6 +99,7 @@ Discover public reads 只返回 `status="visible"` 且 `review_status="visible"`
 - list item 保持卡片字段边界，不返回详情专用字段，例如 `gallery_media`、`gallery_urls`、`navigation`、完整地址字段
 - `/places/:id` 负责详情字段，包括结构化 `gallery_media`、派生兼容字段 `gallery_urls` 与 `navigation`
 - 后台 places v1 支持维护双语简介、分类、标签、推荐状态/理由/排序、发布状态、坐标、腾讯 POI、导航/收藏/分享开关，并通过 `gallery_file_ids` 保存图集归属
+- 后台 places v1 支持通过 `GET /admin/places/poi-search` 代理腾讯地图地点搜索，候选结果只用于辅助填充中文名、中文地址、坐标和 `tencent_map_poi_id`；英文内容、分类和简介仍由后台人工维护
 - 后台 places v1 支持 partial update 和 hard delete；删除成功返回 `{ deleted_id }`，随后 admin list、public list、map marker、public detail 均不再返回该地点
 - 后台 places v1 可保存志愿者导入草稿的 `import_review` 审核元数据；该字段仅属于 canonical/admin place 记录，public list、map marker、detail payload 均不返回原始采集证据或审核备注
 - `scripts/places_volunteer_import.mjs` 可将 `docs/志愿者点位采集表.xlsx` 的 19 条点位列映射为 draft places，并可通过 `POST /admin/places` 执行导入

@@ -2,12 +2,14 @@ import Router from "@koa/router";
 import {
   CreatePlaceInputSchema,
   PlaceListQuerySchema,
+  PlacePoiSearchQuerySchema,
   UpdatePlaceInputSchema
 } from "@community-map/shared";
 
 import { requireRole } from "../lib/auth";
 import { apiError } from "../lib/errors";
 import { parseOrThrow, sendSuccess } from "../lib/http";
+import { searchTencentPlacePois } from "../lib/tencent-map";
 
 export const registerPlaceRoutes = (router: Router) => {
   router.get("/places", async (ctx) => {
@@ -34,6 +36,16 @@ export const registerPlaceRoutes = (router: Router) => {
     requireRole("community_admin", "system_admin"),
     async (ctx) => {
       const data = await ctx.state.provider.places.listAdmin();
+      sendSuccess(ctx, data);
+    }
+  );
+
+  router.get(
+    "/admin/places/poi-search",
+    requireRole("community_admin", "system_admin"),
+    async (ctx) => {
+      const query = parseOrThrow(PlacePoiSearchQuerySchema, ctx.query);
+      const data = await searchTencentPlacePois(query.keyword);
       sendSuccess(ctx, data);
     }
   );

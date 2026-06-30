@@ -96,6 +96,24 @@ export const PlaceListQuerySchema = PageQuerySchema.extend({
   sort: PlaceListSortSchema.default("recommended")
 });
 
+export const PlacePoiSearchQuerySchema = z.object({
+  keyword: z.string().trim().min(1).max(80)
+});
+
+export const PlacePoiSearchItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  address: z.string(),
+  category: z.string().nullable(),
+  location: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180)
+  }),
+  province: z.string().nullable(),
+  city: z.string().nullable(),
+  district: z.string().nullable()
+});
+
 export const CreatePlaceInputSchema = PlaceSchema.pick({
   name_zh: true,
   name_en: true,
@@ -146,3 +164,5 @@ export const UpdatePlaceInputSchema = CreatePlaceInputSchema.partial();
 export const DeletePlaceResponseSchema = z.object({
   deleted_id: z.string()
 });
+
+export const PlacePoiSearchResponseSchema = z.array(PlacePoiSearchItemSchema);

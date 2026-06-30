@@ -18,7 +18,8 @@ import type {
   DeletePlaceResponseSchema,
   PlaceGalleryMediaSchema,
   PlaceListItemSchema,
-  PlaceMapMarkerSchema
+  PlaceMapMarkerSchema,
+  PlacePoiSearchItemSchema
 } from "../schemas/places";
 
 export type User = z.infer<typeof UserSchema>;
@@ -31,6 +32,7 @@ export type PlaceListItem = z.infer<typeof PlaceListItemSchema>;
 export type PlaceGalleryMedia = z.infer<typeof PlaceGalleryMediaSchema>;
 export type PlaceDetail = z.infer<typeof PlaceDetailSchema>;
 export type PlaceMapMarker = z.infer<typeof PlaceMapMarkerSchema>;
+export type PlacePoiSearchItem = z.infer<typeof PlacePoiSearchItemSchema>;
 export type DeletePlaceResponse = z.infer<typeof DeletePlaceResponseSchema>;
 export type Post = z.infer<typeof PostSchema>;
 export type Comment = z.infer<typeof CommentSchema>;

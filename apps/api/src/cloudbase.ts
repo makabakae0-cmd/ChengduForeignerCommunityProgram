@@ -12,6 +12,7 @@ import {
   LoginRequestSchema,
   ModeratePostInputSchema,
   PlaceListQuerySchema,
+  PlacePoiSearchQuerySchema,
   PostListQuerySchema,
   PrivateUrlRequestInputSchema,
   ReportPostInputSchema,
@@ -26,6 +27,7 @@ import {
   isProtectedGalleryCompletion,
   isProtectedGalleryUploadRequest
 } from "./lib/protected-files";
+import { searchTencentPlacePois } from "./lib/tencent-map";
 import { createProvider } from "./providers";
 import type { ApiProvider } from "./providers/types";
 
@@ -543,6 +545,18 @@ export const main: CloudbaseEventHandler = async (event, context) => {
         "system_admin"
       ]);
       return ok(await provider.places.listAdmin(), requestId);
+    }
+
+    if (method === "GET" && pathname === "/admin/places/poi-search") {
+      await requireRole(provider, { eventID: requestId, httpContext }, [
+        "community_admin",
+        "system_admin"
+      ]);
+      const query = parseOrThrow(
+        PlacePoiSearchQuerySchema,
+        Object.fromEntries(url.searchParams.entries())
+      );
+      return ok(await searchTencentPlacePois(query.keyword), requestId);
     }
 
     {

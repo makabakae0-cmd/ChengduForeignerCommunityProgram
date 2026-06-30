@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 
 import { FILE_PATH_RULES } from "@community-map/shared";
+import { vi } from "vitest";
 
 import { createApp } from "../src/app";
 
@@ -609,6 +610,180 @@ describe("api routes", () => {
       ).toBe(true);
     } finally {
       await close();
+    }
+  });
+
+  it("proxies admin place POI search through Tencent Map configuration", async () => {
+    const previousTencentMapKey = process.env.TENCENT_MAP_KEY;
+    const previousTencentMapSecretKey = process.env.TENCENT_MAP_SECRET_KEY;
+    const originalFetch = globalThis.fetch;
+    process.env.TENCENT_MAP_KEY = "test-map-key";
+    process.env.TENCENT_MAP_SECRET_KEY = "test-secret-key";
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : String(input);
+
+      if (!url.startsWith("https://apis.map.qq.com/")) {
+        return originalFetch(input, init);
+      }
+
+      expect(url).toContain("https://apis.map.qq.com/ws/place/v1/search");
+      expect(url).toContain("keyword=%E6%A1%90%E6%A2%93%E6%9E%97");
+      expect(url).toContain("boundary=region%28%E6%88%90%E9%83%BD%2C0%29");
+      expect(url).toContain("page_size=10");
+      expect(url).toContain("sig=");
+
+      return new Response(
+        JSON.stringify({
+          status: 0,
+          message: "query ok",
+          data: [
+            {
+              id: "poi_tongzilin",
+              title: "桐梓林",
+              address: "四川省成都市武侯区桐梓林路",
+              category: "交通设施",
+              location: {
+                lat: 30.615,
+                lng: 104.062
+              },
+              ad_info: {
+                province: "四川省",
+                city: "成都市",
+                district: "武侯区"
+              }
+            }
+          ]
+        }),
+        {
+          headers: {
+            "content-type": "application/json"
+          }
+        }
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const response = await fetch(
+        `${baseUrl}/admin/places/poi-search?keyword=${encodeURIComponent("桐梓林")}`,
+        {
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.data).toEqual([
+        {
+          id: "poi_tongzilin",
+          title: "桐梓林",
+          address: "四川省成都市武侯区桐梓林路",
+          category: "交通设施",
+          location: {
+            latitude: 30.615,
+            longitude: 104.062
+          },
+          province: "四川省",
+          city: "成都市",
+          district: "武侯区"
+        }
+      ]);
+      const tencentCalls = fetchMock.mock.calls.filter(([input]) => {
+        const url = input instanceof Request ? input.url : String(input);
+        return url.startsWith("https://apis.map.qq.com/");
+      });
+
+      expect(tencentCalls).toHaveLength(1);
+    } finally {
+      await close();
+      vi.unstubAllGlobals();
+
+      if (previousTencentMapKey === undefined) {
+        delete process.env.TENCENT_MAP_KEY;
+      } else {
+        process.env.TENCENT_MAP_KEY = previousTencentMapKey;
+      }
+
+      if (previousTencentMapSecretKey === undefined) {
+        delete process.env.TENCENT_MAP_SECRET_KEY;
+      } else {
+        process.env.TENCENT_MAP_SECRET_KEY = previousTencentMapSecretKey;
+      }
+    }
+  });
+
+  it("returns clear admin place POI search errors for missing key and upstream failures", async () => {
+    const previousTencentMapKey = process.env.TENCENT_MAP_KEY;
+    const previousTencentMapSecretKey = process.env.TENCENT_MAP_SECRET_KEY;
+    const originalFetch = globalThis.fetch;
+    delete process.env.TENCENT_MAP_KEY;
+    delete process.env.TENCENT_MAP_SECRET_KEY;
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const missingKeyResponse = await fetch(
+        `${baseUrl}/admin/places/poi-search?keyword=${encodeURIComponent("桐梓林")}`,
+        {
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      const missingKeyBody = await missingKeyResponse.json();
+
+      expect(missingKeyResponse.status).toBe(500);
+      expect(missingKeyBody.error.code).toBe("CONFIGURATION_ERROR");
+
+      process.env.TENCENT_MAP_KEY = "test-map-key";
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+          const url = input instanceof Request ? input.url : String(input);
+
+          if (!url.startsWith("https://apis.map.qq.com/")) {
+            return originalFetch(input, init);
+          }
+
+          return new Response(
+            JSON.stringify({
+              status: 121,
+              message: "key校验失败"
+            })
+          );
+        })
+      );
+
+      const upstreamResponse = await fetch(
+        `${baseUrl}/admin/places/poi-search?keyword=${encodeURIComponent("桐梓林")}`,
+        {
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      const upstreamBody = await upstreamResponse.json();
+
+      expect(upstreamResponse.status).toBe(502);
+      expect(upstreamBody.error.code).toBe("UPSTREAM_ERROR");
+      expect(upstreamBody.error.message).toBe("key校验失败");
+    } finally {
+      await close();
+      vi.unstubAllGlobals();
+
+      if (previousTencentMapKey === undefined) {
+        delete process.env.TENCENT_MAP_KEY;
+      } else {
+        process.env.TENCENT_MAP_KEY = previousTencentMapKey;
+      }
+
+      if (previousTencentMapSecretKey === undefined) {
+        delete process.env.TENCENT_MAP_SECRET_KEY;
+      } else {
+        process.env.TENCENT_MAP_SECRET_KEY = previousTencentMapSecretKey;
+      }
     }
   });
 

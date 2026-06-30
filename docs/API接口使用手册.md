@@ -129,6 +129,13 @@ Protected file paths / business types:
 
 注意：events、discover、comments、files、notifications、auth/role 当前只完成 local/API readiness 和 CloudBase handler fallback parity；非 places live provider persistence 尚未验收。
 
+Admin 地点腾讯地图搜索由 API 端代理调用腾讯位置服务 WebServiceAPI：
+
+- `TENCENT_MAP_KEY`：必填，腾讯位置服务 Key。
+- `TENCENT_MAP_SECRET_KEY`：可选，开启 SN 校验后填写 SecretKey/SK，API 会在服务端生成 `sig`。
+- 不要把腾讯地图 key 配成 Admin 前端 `VITE_` 变量；静态站点包会暴露这类变量。
+- CloudBase `community-map-api` 函数配置 key 时，保留现有 `API_PROVIDER=cloudbase`、`CLOUDBASE_PROVIDER_MODE=live`、`CLOUDBASE_ENV_ID=cloud1-d7gxdk8t43bd639c0`。
+
 ## 3. 快速启动
 
 启动 API：
@@ -853,6 +860,42 @@ curl http://127.0.0.1:8787/places/place_001
 curl http://127.0.0.1:8787/admin/places \
   -H 'x-mock-user-id: user_001'
 ```
+
+### GET `/admin/places/poi-search`
+
+用途：管理端按中文名称、地标或地址搜索腾讯地图 POI 候选，用于新建/编辑地点时自动填充中文名、中文地址、经纬度和腾讯 POI ID。
+
+权限：`community_admin` 或 `system_admin`。
+
+Query：
+
+| 字段      | 类型   | 必填 | 说明                                 |
+| --------- | ------ | ---- | ------------------------------------ |
+| `keyword` | string | 是   | 地标或地址关键词，服务端会 trim 校验 |
+
+响应 data：`PlacePoiSearchItem[]`
+
+| 字段       | 类型   | 说明                           |
+| ---------- | ------ | ------------------------------ |
+| `id`       | string | 腾讯地图 POI ID 或稳定 fallback |
+| `title`    | string | 腾讯地图地点名称               |
+| `address`  | string | 腾讯地图中文地址               |
+| `category` | string/null | 腾讯地图分类              |
+| `location` | object | `{ latitude, longitude }`      |
+| `province` / `city` / `district` | string/null | 行政区信息 |
+
+示例：
+
+```bash
+curl 'http://127.0.0.1:8787/admin/places/poi-search?keyword=桐梓林' \
+  -H 'x-mock-user-id: user_001'
+```
+
+关键错误：
+
+- `400 VALIDATION_ERROR`：缺少或传入空 `keyword`。
+- `500 CONFIGURATION_ERROR`：API 端未配置 `TENCENT_MAP_KEY`。
+- `502 UPSTREAM_ERROR`：腾讯地图接口不可用、返回非 0 状态或响应结构不符合预期。
 
 ### POST `/admin/places`
 
