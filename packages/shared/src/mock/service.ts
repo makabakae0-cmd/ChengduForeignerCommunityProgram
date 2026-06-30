@@ -173,6 +173,8 @@ const isAdmin = (user: User) =>
   user.role_flags.includes("community_admin") ||
   user.role_flags.includes("system_admin");
 
+export const PENDING_PLACE_GALLERY_BIZ_ID = "__pending_place_gallery__";
+
 const isLaunchVisibleEvent = (event: Event) =>
   event.review_status === "approved" && event.publish_status === "published";
 
@@ -225,6 +227,7 @@ const toPlaceDetail = (
     name_zh: place.name_zh,
     name_en: place.name_en,
     cover_url: place.cover_url,
+    cover_source: place.cover_source,
     category_level_1: place.category_level_1,
     category_level_2: place.category_level_2,
     tag_ids: place.tag_ids,
@@ -236,6 +239,7 @@ const toPlaceDetail = (
     intro_zh: place.intro_zh,
     intro_en: place.intro_en,
     gallery_media,
+    external_gallery_media: place.external_gallery_media,
     gallery_urls: gallery_media.map((media) => media.url),
     is_recommended: place.is_recommended,
     recommended_reason_zh: place.recommended_reason_zh,
@@ -663,6 +667,7 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
           name_en: input.name_en ?? "",
           cover_file_id: input.cover_file_id ?? null,
           cover_url: input.cover_url ?? null,
+          cover_source: input.cover_source ?? null,
           category_level_1:
             input.category_level_1 ?? PLACE_TOP_LEVEL_CATEGORIES[0],
           category_level_2: input.category_level_2 ?? "",
@@ -680,6 +685,7 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
           is_recommended: input.is_recommended ?? false,
           recommended_rank: input.recommended_rank ?? 0,
           gallery_file_ids: input.gallery_file_ids ?? [],
+          external_gallery_media: input.external_gallery_media ?? [],
           gallery_urls: input.gallery_urls ?? [],
           supports_navigation: input.supports_navigation ?? true,
           supports_favorite: input.supports_favorite ?? true,
@@ -689,6 +695,15 @@ export const createMockService = (seed?: Partial<MockDataset>) => {
         };
 
         state.places.unshift(place);
+        for (const asset of state.fileAssets) {
+          if (
+            place.gallery_file_ids.includes(asset.file_id) &&
+            asset.biz_type === "place_gallery" &&
+            asset.biz_id === PENDING_PLACE_GALLERY_BIZ_ID
+          ) {
+            asset.biz_id = place._id;
+          }
+        }
         return place;
       },
       update(id: string, input: Partial<Place>) {

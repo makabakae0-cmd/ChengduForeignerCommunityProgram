@@ -8,15 +8,17 @@ import {
   UpdatePlaceInputSchema,
   type ApiFailureResult,
   type Place,
+  type PlaceAmapMediaSearchItem,
+  type PlaceExternalMedia,
   type PlacePoiSearchItem
 } from "@community-map/shared";
 
-import { FILE_PATH_RULES, adminApi } from "@/api/client";
+import { adminApi } from "@/api/client";
 
 const loading = ref(false);
 const places = ref<Place[]>([]);
 const saving = ref(false);
-const registeringGallery = ref(false);
+const uploadingGallery = ref(false);
 const editingId = ref<string | null>(null);
 const deletingId = ref<string | null>(null);
 const submittingError = ref("");
@@ -24,6 +26,11 @@ const poiKeyword = ref("");
 const poiSearching = ref(false);
 const poiResults = ref<PlacePoiSearchItem[]>([]);
 const poiError = ref("");
+const amapKeyword = ref("");
+const amapSearching = ref(false);
+const amapResults = ref<PlaceAmapMediaSearchItem[]>([]);
+const amapError = ref("");
+const galleryFileInput = ref<HTMLInputElement | null>(null);
 
 const categoryOptions = PLACE_TOP_LEVEL_CATEGORIES.map((value) => ({
   value,
@@ -67,7 +74,11 @@ const getReviewIndicators = (place: Place) => {
   if (place.tag_ids.length === 0) {
     indicators.push({ type: "warning", label: "缺标签" });
   }
-  if (place.gallery_file_ids.length === 0 && place.gallery_urls.length === 0) {
+  if (
+    place.gallery_file_ids.length === 0 &&
+    place.external_gallery_media.length === 0 &&
+    place.gallery_urls.length === 0
+  ) {
     indicators.push({ type: "info", label: "缺图集" });
   }
   if (!place.is_recommended) {
@@ -86,6 +97,7 @@ const createEmptyForm = () => ({
   name_en: "New Draft Place",
   cover_file_id: null as string | null,
   cover_url: "",
+  cover_source: null as Place["cover_source"],
   category_level_1: "public-service",
   category_level_2: "community-center",
   tag_ids_text: "service,community",
@@ -103,8 +115,8 @@ const createEmptyForm = () => ({
   is_recommended: false,
   recommended_rank: 0,
   gallery_file_ids: [] as string[],
+  external_gallery_media: [] as PlaceExternalMedia[],
   gallery_urls: [] as string[],
-  gallery_file_name: "",
   status: "draft" as Place["status"],
   supports_navigation: true,
   supports_favorite: true,
@@ -145,6 +157,7 @@ const fillForm = (place?: Place) => {
     name_en: place.name_en,
     cover_file_id: place.cover_file_id,
     cover_url: place.cover_url ?? "",
+    cover_source: place.cover_source,
     category_level_1: place.category_level_1,
     category_level_2: place.category_level_2,
     tag_ids_text: place.tag_ids.join(","),
@@ -162,8 +175,8 @@ const fillForm = (place?: Place) => {
     is_recommended: place.is_recommended,
     recommended_rank: place.recommended_rank,
     gallery_file_ids: [...place.gallery_file_ids],
+    external_gallery_media: [...place.external_gallery_media],
     gallery_urls: [...place.gallery_urls],
-    gallery_file_name: "",
     status: place.status,
     supports_navigation: place.supports_navigation,
     supports_favorite: place.supports_favorite,
@@ -176,6 +189,7 @@ const buildPayload = () => ({
   name_en: form.name_en,
   cover_file_id: form.cover_file_id,
   cover_url: form.cover_url || null,
+  cover_source: form.cover_source,
   category_level_1: form.category_level_1,
   category_level_2: form.category_level_2,
   tag_ids: form.tag_ids_text
@@ -198,6 +212,7 @@ const buildPayload = () => ({
   is_recommended: form.is_recommended,
   recommended_rank: Number(form.recommended_rank),
   gallery_file_ids: form.gallery_file_ids,
+  external_gallery_media: form.external_gallery_media,
   gallery_urls: form.gallery_urls,
   supports_navigation: form.supports_navigation,
   supports_favorite: form.supports_favorite,
@@ -300,6 +315,48 @@ const searchPoi = async () => {
   }
 };
 
+const searchAmapMedia = async () => {
+  const keyword = amapKeyword.value.trim();
+
+  if (!keyword) {
+    ElMessage.warning("请输入可搜索图片的地点关键词。");
+    return;
+  }
+
+  amapSearching.value = true;
+  amapError.value = "";
+
+  try {
+    const result = (await adminApi.admin.searchPlaceAmapMedia({
+      keyword
+    })) as unknown;
+
+    if (isApiFailureResult(result)) {
+      amapResults.value = [];
+      amapError.value = result.error.message;
+      ElMessage.error(result.error.message);
+      return;
+    }
+
+    const successResult = result as { data: PlaceAmapMediaSearchItem[] };
+    amapResults.value = successResult.data;
+
+    if (
+      successResult.data.every((item) => item.image_candidates.length === 0)
+    ) {
+      amapError.value = "未找到带图片的 Amap 候选。";
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Amap 图片搜索失败。";
+    amapResults.value = [];
+    amapError.value = message;
+    ElMessage.error(message);
+  } finally {
+    amapSearching.value = false;
+  }
+};
+
 const hasManualPlaceLookupFields = () => {
   const emptyForm = createEmptyForm();
 
@@ -376,50 +433,115 @@ const removeGalleryFile = (fileId: string) => {
   );
 };
 
-const registerGalleryFile = async () => {
-  if (!editingId.value) {
-    ElMessage.warning("请先创建并保存地点，再登记图集文件。");
+const addExternalGalleryMedia = (media: PlaceExternalMedia) => {
+  const exists = form.external_gallery_media.some(
+    (item) =>
+      item.source === media.source &&
+      item.source_place_id === media.source_place_id &&
+      item.image_url === media.image_url
+  );
+
+  if (!exists) {
+    form.external_gallery_media = [...form.external_gallery_media, media];
+  }
+
+  ElMessage.success("已添加外部图集图片。");
+};
+
+const useExternalCover = (media: PlaceExternalMedia) => {
+  form.cover_url = media.image_url;
+  form.cover_source = {
+    source: media.source,
+    source_place_id: media.source_place_id,
+    image_url: media.image_url,
+    image_title: media.image_title,
+    attribution: media.attribution
+  };
+  ElMessage.success("已设置外部封面来源。");
+};
+
+const removeExternalGalleryMedia = (index: number) => {
+  form.external_gallery_media = form.external_gallery_media.filter(
+    (_, itemIndex) => itemIndex !== index
+  );
+};
+
+const clearCoverSource = () => {
+  form.cover_source = null;
+};
+
+const chooseGalleryUpload = () => {
+  galleryFileInput.value?.click();
+};
+
+const uploadGalleryFile = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (!file) {
     return;
   }
 
-  const fileName = form.gallery_file_name.trim();
-  if (!fileName) {
-    ElMessage.warning("请输入图集文件名。");
-    return;
-  }
-
-  registeringGallery.value = true;
+  uploadingGallery.value = true;
   try {
-    const uploadRequest = await adminApi.files.createUploadRequest({
-      biz_type: "place_gallery",
-      biz_id: editingId.value,
-      file_name: fileName,
-      visibility: "public",
-      target_prefix: FILE_PATH_RULES.placeGallery
-    });
-    const fileId = `cloud://${uploadRequest.data.cloud_path}`;
-    const completion = await adminApi.files.complete({
-      biz_type: "place_gallery",
-      biz_id: editingId.value,
-      file_id: fileId,
-      cloud_path: uploadRequest.data.cloud_path,
-      visibility: "public"
-    });
-    const galleryFileIds = [
-      ...new Set([...form.gallery_file_ids, completion.data.file_id])
-    ];
+    const uploadInput = {
+      file,
+      file_name: file.name,
+      content_type: file.type
+    };
+    const result = (await (editingId.value
+      ? adminApi.admin.uploadPlaceGalleryFile(editingId.value, uploadInput)
+      : adminApi.admin.uploadPendingPlaceGalleryFile(uploadInput))) as unknown;
 
-    await adminApi.admin.updatePlace(editingId.value, {
-      gallery_file_ids: galleryFileIds,
-      gallery_urls: []
-    });
+    if (isApiFailureResult(result)) {
+      ElMessage.error(result.error.message);
+      return;
+    }
 
-    form.gallery_file_ids = galleryFileIds;
-    form.gallery_file_name = "";
-    ElMessage.success("图集文件已登记并挂接。");
+    const successResult = result as {
+      data: { file_asset: { file_id: string }; gallery_file_ids: string[] };
+    };
+
+    form.gallery_file_ids = editingId.value
+      ? successResult.data.gallery_file_ids
+      : [
+          ...new Set([
+            ...form.gallery_file_ids,
+            successResult.data.file_asset.file_id
+          ])
+        ];
+
+    ElMessage.success(
+      editingId.value
+        ? "图集图片已上传。"
+        : "图集图片已上传，创建地点时会自动绑定。"
+    );
     await load();
   } finally {
-    registeringGallery.value = false;
+    uploadingGallery.value = false;
+    target.value = "";
+  }
+};
+
+const saveMediaOnly = async () => {
+  if (!editingId.value) {
+    ElMessage.warning("请先创建并保存地点。");
+    return;
+  }
+
+  saving.value = true;
+  try {
+    await adminApi.admin.updatePlace(editingId.value, {
+      cover_url: form.cover_url || null,
+      cover_source: form.cover_source,
+      gallery_file_ids: form.gallery_file_ids,
+      external_gallery_media: form.external_gallery_media,
+      gallery_urls: []
+    });
+    ElMessage.success("媒体设置已保存。");
+    await load();
+  } finally {
+    saving.value = false;
   }
 };
 
@@ -439,6 +561,7 @@ onMounted(async () => {
       <div class="editor-card">
         <h3>{{ editingId ? "编辑地点" : "新建地点" }}</h3>
         <div class="poi-search-panel">
+          <div class="search-section-title">腾讯地图地标</div>
           <div class="poi-search-row">
             <el-input
               v-model="poiKeyword"
@@ -473,6 +596,63 @@ onMounted(async () => {
                 {{ item.location.longitude.toFixed(6) }}
               </span>
             </button>
+          </div>
+        </div>
+        <div class="poi-search-panel">
+          <div class="search-section-title">Amap 图片候选</div>
+          <div class="poi-search-row">
+            <el-input
+              v-model="amapKeyword"
+              placeholder="搜索带图片的地点，例如 Global Corner Cafe"
+              clearable
+              @keyup.enter="searchAmapMedia"
+            />
+            <el-button
+              type="primary"
+              :loading="amapSearching"
+              @click="searchAmapMedia"
+            >
+              搜索图片
+            </el-button>
+          </div>
+          <div v-if="amapError" class="hint-text">{{ amapError }}</div>
+          <div v-if="amapResults.length" class="amap-result-list">
+            <div
+              v-for="candidate in amapResults"
+              :key="candidate.id"
+              class="amap-result-item"
+            >
+              <div class="amap-place-meta">
+                <strong>{{ candidate.title }}</strong>
+                <span>{{ candidate.address || "暂无地址" }}</span>
+              </div>
+              <div v-if="candidate.image_candidates.length" class="amap-images">
+                <div
+                  v-for="media in candidate.image_candidates"
+                  :key="media.image_url"
+                  class="amap-image-card"
+                >
+                  <img
+                    :src="media.image_url"
+                    :alt="media.image_title || candidate.title"
+                  />
+                  <div class="source-label">{{ media.attribution.label }}</div>
+                  <div class="image-actions">
+                    <el-button size="small" @click="useExternalCover(media)">
+                      设为封面
+                    </el-button>
+                    <el-button
+                      size="small"
+                      type="primary"
+                      @click="addExternalGalleryMedia(media)"
+                    >
+                      加入外部图集
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="hint-text">该候选暂无图片。</div>
+            </div>
           </div>
         </div>
         <div class="form-grid">
@@ -564,28 +744,39 @@ onMounted(async () => {
           <div class="gallery-header">
             <h4>地点图集</h4>
             <span
-              >通过 files flow
-              登记并挂接，移动端详情页按文件资产解析图片。</span
+              >上传图片作为社区自有图集；Amap 图片作为外部来源单独保存。</span
             >
           </div>
-          <div class="gallery-register-row">
-            <el-input
-              v-model="form.gallery_file_name"
-              placeholder="图集文件名，例如 entrance.jpg"
+          <div class="gallery-upload-row">
+            <input
+              ref="galleryFileInput"
+              class="visually-hidden"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              @change="uploadGalleryFile"
             />
             <el-button
               type="primary"
-              :loading="registeringGallery"
-              :disabled="!editingId"
-              @click="registerGalleryFile"
+              :loading="uploadingGallery"
+              @click="chooseGalleryUpload"
             >
-              登记图集文件
+              选择并上传图片
+            </el-button>
+            <el-button :disabled="!editingId" @click="saveMediaOnly">
+              保存媒体设置
             </el-button>
           </div>
           <div v-if="!editingId" class="hint-text">
-            新建地点需先保存草稿，获得地点 ID 后再登记图集文件。
+            新建地点可先上传图集图片；点击创建地点后会自动绑定到新地点。
+          </div>
+          <div v-if="form.cover_source" class="cover-source-box">
+            <span>封面来源：{{ form.cover_source.attribution.label }}</span>
+            <el-button link type="danger" @click="clearCoverSource">
+              清除来源
+            </el-button>
           </div>
           <div v-if="form.gallery_file_ids.length" class="gallery-file-list">
+            <span class="media-group-label">已上传文件</span>
             <el-tag
               v-for="fileId in form.gallery_file_ids"
               :key="fileId"
@@ -595,7 +786,36 @@ onMounted(async () => {
               {{ fileId }}
             </el-tag>
           </div>
-          <div v-else class="hint-text">暂无已挂接图集文件。</div>
+          <div v-else class="hint-text">暂无已上传图集文件。</div>
+          <div
+            v-if="form.external_gallery_media.length"
+            class="external-media-list"
+          >
+            <span class="media-group-label">外部来源图片</span>
+            <div
+              v-for="(media, index) in form.external_gallery_media"
+              :key="media.image_url"
+              class="external-media-card"
+            >
+              <img
+                :src="media.image_url"
+                :alt="media.image_title || 'external image'"
+              />
+              <div>
+                <div class="source-label">{{ media.attribution.label }}</div>
+                <div class="hint-text">
+                  {{ media.image_title || media.source_place_id }}
+                </div>
+              </div>
+              <el-button
+                link
+                type="danger"
+                @click="removeExternalGalleryMedia(index)"
+              >
+                移除
+              </el-button>
+            </div>
+          </div>
         </div>
         <div class="editor-actions">
           <el-button @click="startCreate">重置</el-button>
@@ -682,6 +902,14 @@ onMounted(async () => {
   margin-bottom: 16px;
 }
 
+.search-section-title,
+.media-group-label {
+  margin-bottom: 8px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .poi-search-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -693,6 +921,66 @@ onMounted(async () => {
   display: grid;
   gap: 8px;
   margin-top: 10px;
+}
+
+.amap-result-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.amap-result-item {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.amap-place-meta {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 10px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.amap-place-meta span {
+  color: #6b7280;
+}
+
+.amap-images,
+.external-media-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.amap-image-card,
+.external-media-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.amap-image-card img,
+.external-media-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #e5e7eb;
+}
+
+.image-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.source-label {
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .poi-result-item {
@@ -770,7 +1058,7 @@ onMounted(async () => {
   font-size: 13px;
 }
 
-.gallery-register-row,
+.gallery-upload-row,
 .gallery-file-list,
 .review-indicators {
   display: flex;
@@ -781,6 +1069,28 @@ onMounted(async () => {
 
 .gallery-file-list {
   margin-top: 12px;
+}
+
+.external-media-list,
+.cover-source-box {
+  margin-top: 12px;
+}
+
+.cover-source-box {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .mt-12 {

@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { PLACE_STATUSES } from "../enums";
-import { PlaceSchema } from "./entities";
+import {
+  PlaceCoverSourceSchema,
+  PlaceExternalMediaSchema,
+  PlaceSchema
+} from "./entities";
 import { CoordinatesSchema, PageQuerySchema } from "./common";
 import { PlaceTopLevelCategorySchema } from "./place-categories";
 
@@ -67,6 +71,7 @@ export const PlaceDetailSchema = z.object({
   name_zh: z.string(),
   name_en: z.string(),
   cover_url: z.string().url().nullable(),
+  cover_source: PlaceCoverSourceSchema.nullable().default(null),
   category_level_1: PlaceTopLevelCategorySchema,
   category_level_2: z.string(),
   tag_ids: z.array(z.string()),
@@ -78,6 +83,7 @@ export const PlaceDetailSchema = z.object({
   intro_zh: z.string(),
   intro_en: z.string(),
   gallery_media: z.array(PlaceGalleryMediaSchema),
+  external_gallery_media: z.array(PlaceExternalMediaSchema).default([]),
   gallery_urls: z.array(z.string().url()),
   is_recommended: z.boolean(),
   recommended_reason_zh: z.string().nullable(),
@@ -119,6 +125,7 @@ export const CreatePlaceInputSchema = PlaceSchema.pick({
   name_en: true,
   cover_file_id: true,
   cover_url: true,
+  cover_source: true,
   category_level_1: true,
   category_level_2: true,
   tag_ids: true,
@@ -134,6 +141,7 @@ export const CreatePlaceInputSchema = PlaceSchema.pick({
   is_recommended: true,
   recommended_rank: true,
   gallery_file_ids: true,
+  external_gallery_media: true,
   gallery_urls: true,
   tencent_map_poi_id: true,
   supports_navigation: true,
@@ -144,12 +152,14 @@ export const CreatePlaceInputSchema = PlaceSchema.pick({
 }).extend({
   cover_file_id: z.string().nullable().default(null),
   cover_url: z.string().url().nullable().default(null),
+  cover_source: PlaceCoverSourceSchema.nullable().default(null),
   tag_ids: z.array(z.string()).default([]),
   recommended_reason_zh: z.string().nullable().default(null),
   recommended_reason_en: z.string().nullable().default(null),
   is_recommended: z.boolean().default(false),
   recommended_rank: z.number().int().min(0).default(0),
   gallery_file_ids: z.array(z.string()).default([]),
+  external_gallery_media: z.array(PlaceExternalMediaSchema).default([]),
   gallery_urls: z.array(z.string().url()).default([]),
   tencent_map_poi_id: z.string().nullable().default(null),
   supports_navigation: z.boolean().default(true),
@@ -166,3 +176,31 @@ export const DeletePlaceResponseSchema = z.object({
 });
 
 export const PlacePoiSearchResponseSchema = z.array(PlacePoiSearchItemSchema);
+
+export const PlaceAmapMediaSearchQuerySchema = z.object({
+  keyword: z.string().trim().min(1).max(80),
+  city: z.string().trim().min(1).max(40).default("成都")
+});
+
+export const PlaceAmapImageCandidateSchema = PlaceExternalMediaSchema;
+
+export const PlaceAmapMediaSearchItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  address: z.string(),
+  category: z.string().nullable(),
+  location: z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180)
+    })
+    .nullable(),
+  province: z.string().nullable(),
+  city: z.string().nullable(),
+  district: z.string().nullable(),
+  image_candidates: z.array(PlaceAmapImageCandidateSchema)
+});
+
+export const PlaceAmapMediaSearchResponseSchema = z.array(
+  PlaceAmapMediaSearchItemSchema
+);

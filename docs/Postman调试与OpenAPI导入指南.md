@@ -9,12 +9,12 @@ OpenAPI 文件：`docs/openapi/community-map-api.openapi.yaml`
 
 正式目标是 CloudBase 同生态部署：
 
-| 层级 | 目标资源 | 用途 | 当前状态 |
-| --- | --- | --- | --- |
-| 数据库 | CloudBase 文档型数据库 | 存储 users、places、file_assets、configs、operation_logs，以及后续 events/posts/comments/announcements/notifications | dev 环境和 v1 集合已实时验证；当前 live `places` collection 为空 |
-| API / BFF | CloudBase HTTP 云函数 `community-map-api` | 统一承接 Mobile、小程序、Admin、Postman 请求；执行校验、权限、响应 envelope、provider 选择和文件临时 URL | dev HTTP function 和 `/api` route 已验证，证据见 `docs/cloudbase-dev-api-deployment.md` |
-| 文件 | CloudBase 云存储 | 存放地点图集、活动封面、帖子图片、票券二维码、导出文件 | 路径规则已记录；真实媒体 live flow 待验收 |
-| Admin 托管 | CloudBase 静态网站托管 | 部署 Web 管理后台 | dev hosting domain 已记录；正式联调待验收 |
+| 层级       | 目标资源                                  | 用途                                                                                                                 | 当前状态                                                                                |
+| ---------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 数据库     | CloudBase 文档型数据库                    | 存储 users、places、file_assets、configs、operation_logs，以及后续 events/posts/comments/announcements/notifications | dev 环境和 v1 集合已实时验证；当前 live `places` collection 为空                        |
+| API / BFF  | CloudBase HTTP 云函数 `community-map-api` | 统一承接 Mobile、小程序、Admin、Postman 请求；执行校验、权限、响应 envelope、provider 选择和文件临时 URL             | dev HTTP function 和 `/api` route 已验证，证据见 `docs/cloudbase-dev-api-deployment.md` |
+| 文件       | CloudBase 云存储                          | 存放地点图集、活动封面、帖子图片、票券二维码、导出文件                                                               | 路径规则已记录；真实媒体 live flow 待验收                                               |
+| Admin 托管 | CloudBase 静态网站托管                    | 部署 Web 管理后台                                                                                                    | dev hosting domain 已记录；正式联调待验收                                               |
 
 为什么不能只用微信云数据库：
 
@@ -95,10 +95,10 @@ Chengdu Tongzilin Community Map API
 
 变量：
 
-| 变量 | Initial value | Current value |
-| --- | --- | --- |
-| `baseUrl` | `http://127.0.0.1:8787` | `http://127.0.0.1:8787` |
-| `mockActorId` | `user_001` | `user_001` |
+| 变量          | Initial value           | Current value           |
+| ------------- | ----------------------- | ----------------------- |
+| `baseUrl`     | `http://127.0.0.1:8787` | `http://127.0.0.1:8787` |
+| `mockActorId` | `user_001`              | `user_001`              |
 
 ### cloudbase-dev environment
 
@@ -106,10 +106,10 @@ Chengdu Tongzilin Community Map API
 
 变量：
 
-| 变量 | Initial value | Current value |
-| --- | --- | --- |
-| `baseUrl` | `https://cloud1-d7gxdk8t43bd639c0.service.tcloudbase.com/api` | `https://cloud1-d7gxdk8t43bd639c0.service.tcloudbase.com/api` |
-| `mockActorId` | `user_001` | `user_001` |
+| 变量          | Initial value                                                 | Current value                                                 |
+| ------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| `baseUrl`     | `https://cloud1-d7gxdk8t43bd639c0.service.tcloudbase.com/api` | `https://cloud1-d7gxdk8t43bd639c0.service.tcloudbase.com/api` |
+| `mockActorId` | `user_001`                                                    | `user_001`                                                    |
 
 注意：CloudBase dev 当前已完成 function 和 `/api` route smoke；完整 places live acceptance 仍需先导入或创建 published live places 数据。
 
@@ -198,6 +198,9 @@ POST {{baseUrl}}/admin/discover/posts/:id/moderation
 GET {{baseUrl}}/admin/places
 POST {{baseUrl}}/admin/places
 PATCH {{baseUrl}}/admin/places/:id
+GET {{baseUrl}}/admin/places/amap-media-search
+POST {{baseUrl}}/admin/places/gallery-files
+POST {{baseUrl}}/admin/places/:id/gallery-files
 ```
 
 ### 6.5 Files flow
@@ -215,6 +218,9 @@ POST {{baseUrl}}/files/private-url
 - `biz_type=place_gallery` 需要 admin。
 - `target_prefix=public/places/` 需要 admin。
 - `cloud_path` 以 `public/places/` 开头的 complete 需要 admin。
+- 创建地点前上传自有地点图集使用 `POST /admin/places/gallery-files`，请求为 `multipart/form-data` 的 `file` 字段；创建地点时提交返回的 `file_id` 后会自动绑定到新地点。
+- 为已存在地点追加自有地点图集使用 `POST /admin/places/:id/gallery-files`，请求为 `multipart/form-data` 的 `file` 字段。
+- Amap 图片候选通过 `GET /admin/places/amap-media-search` 获取，只保存为 `external_gallery_media` 或 `cover_source` 外部引用，不进入 `gallery_file_ids`，不创建 `FileAsset`。
 
 ## 7. 常用 Postman 请求示例
 
@@ -260,6 +266,15 @@ Body:
   "status": "published"
 }
 ```
+
+### Amap media search
+
+```http
+GET {{baseUrl}}/admin/places/amap-media-search?keyword=桐梓林
+x-mock-user-id: {{mockActorId}}
+```
+
+需要 API 环境配置 `AMAP_WEB_SERVICE_KEY`。响应中的 `image_candidates` 可用于外部封面或外部图集，展示时必须保留 `attribution`。
 
 ### Create event registration
 

@@ -5,6 +5,8 @@ import {
   CreatePlaceInputSchema,
   DeletePlaceResponseSchema,
   PlaceDetailSchema,
+  PlaceAmapMediaSearchQuerySchema,
+  PlaceAmapMediaSearchResponseSchema,
   PlaceListItemSchema,
   PlaceListQuerySchema,
   PlaceMapMarkerSchema,
@@ -41,6 +43,12 @@ export const placeContracts = {
     path: "/admin/places/poi-search",
     request: PlacePoiSearchQuerySchema,
     response: PlacePoiSearchResponseSchema
+  }),
+  adminAmapMediaSearch: defineContract({
+    method: "GET",
+    path: "/admin/places/amap-media-search",
+    request: PlaceAmapMediaSearchQuerySchema,
+    response: PlaceAmapMediaSearchResponseSchema
   }),
   adminCreate: defineContract({
     method: "POST",

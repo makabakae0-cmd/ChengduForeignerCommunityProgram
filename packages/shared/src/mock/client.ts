@@ -10,6 +10,7 @@ import type {
   Place,
   DeletePlaceResponse,
   PlaceDetail,
+  PlaceAmapMediaSearchItem,
   PlaceListItem,
   PlaceMapMarker,
   PlacePoiSearchItem,
@@ -144,6 +145,23 @@ export interface CommunityMapApiClient {
     searchPlacePoi(input: {
       keyword: string;
     }): Promise<ApiResult<PlacePoiSearchItem[]>>;
+    searchPlaceAmapMedia(input: {
+      keyword: string;
+      city?: string;
+    }): Promise<ApiResult<PlaceAmapMediaSearchItem[]>>;
+    uploadPlaceGalleryFile(
+      id: string,
+      input: { file: Blob; file_name?: string; content_type?: string }
+    ): Promise<
+      ApiResult<{ file_asset: FileAsset; gallery_file_ids: string[] }>
+    >;
+    uploadPendingPlaceGalleryFile(input: {
+      file: Blob;
+      file_name?: string;
+      content_type?: string;
+    }): Promise<
+      ApiResult<{ file_asset: FileAsset; gallery_file_ids: string[] }>
+    >;
   };
 }
 
@@ -322,6 +340,83 @@ export const createMockClient = (
             district: "武侯区"
           }
         ]);
+      },
+      async searchPlaceAmapMedia(input) {
+        const encodedKeyword = encodeURIComponent(input.keyword);
+        return ok([
+          {
+            id: `amap_${encodedKeyword}`,
+            title: input.keyword,
+            address: "四川省成都市武侯区桐梓林路",
+            category: "生活服务",
+            location: {
+              latitude: 30.615,
+              longitude: 104.062
+            },
+            province: "四川省",
+            city: input.city ?? "成都",
+            district: "武侯区",
+            image_candidates: [
+              {
+                source: "amap",
+                source_place_id: `amap_${encodedKeyword}`,
+                image_url: `https://store.is.autonavi.com/showpic/mock-${encodedKeyword}.jpg`,
+                image_title: `${input.keyword} photo`,
+                attribution: {
+                  label: "Image source: Amap",
+                  provider_name: "Amap"
+                }
+              }
+            ]
+          }
+        ]);
+      },
+      async uploadPlaceGalleryFile(id, input) {
+        const fileName = input.file_name ?? "gallery-upload.jpg";
+        const cloudPath = `${id}/${fileName}`;
+        const completion = service.files.complete(
+          {
+            biz_type: "place_gallery",
+            biz_id: id,
+            file_id: `cloud://public/places/${cloudPath}`,
+            cloud_path: `public/places/${cloudPath}`,
+            visibility: "public"
+          },
+          actorId
+        );
+        const place = service.places.update(id, {
+          gallery_file_ids: [
+            ...new Set([
+              ...(service._state.places.find((item) => item._id === id)
+                ?.gallery_file_ids ?? []),
+              completion.file_id
+            ])
+          ]
+        });
+
+        return ok({
+          file_asset: completion,
+          gallery_file_ids: place?.gallery_file_ids ?? [completion.file_id]
+        });
+      },
+      async uploadPendingPlaceGalleryFile(input) {
+        const fileName = input.file_name ?? "gallery-upload.jpg";
+        const pendingId = `pending_${Date.now().toString(36)}`;
+        const completion = service.files.complete(
+          {
+            biz_type: "place_gallery",
+            biz_id: "__pending_place_gallery__",
+            file_id: `cloud://public/places/_pending/${pendingId}/${fileName}`,
+            cloud_path: `public/places/_pending/${pendingId}/${fileName}`,
+            visibility: "public"
+          },
+          actorId
+        );
+
+        return ok({
+          file_asset: completion,
+          gallery_file_ids: [completion.file_id]
+        });
       }
     }
   };

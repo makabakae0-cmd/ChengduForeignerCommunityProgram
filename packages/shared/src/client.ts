@@ -3,12 +3,13 @@ import type { CommunityMapApiClient } from "./mock/client";
 import { apiPaths } from "./contracts/paths";
 
 type RequestMethod = "GET" | "POST" | "PATCH" | "DELETE";
+type RequestBody = unknown;
 
 export interface HttpRequester {
   <TResponse>(
     method: RequestMethod,
     url: string,
-    body?: unknown,
+    body?: RequestBody,
     headers?: Record<string, string>
   ): Promise<TResponse>;
 }
@@ -39,17 +40,43 @@ const buildQuerySuffix = (query?: Record<string, unknown>) => {
     .join("&")}`;
 };
 
+const buildGalleryUploadFormData = (input: {
+  file: Blob;
+  file_name?: string;
+  content_type?: string;
+}) => {
+  const formData = new FormData();
+  formData.append(
+    "file",
+    input.file,
+    input.file_name ?? "place-gallery-upload"
+  );
+  if (input.content_type) {
+    formData.append("content_type", input.content_type);
+  }
+  return formData;
+};
+
 export const createFetchRequester = (
   fetchImpl: typeof fetch = fetch
 ): HttpRequester => {
   return async (method, url, body, headers = {}) => {
+    const isFormData =
+      typeof FormData !== "undefined" && body instanceof FormData;
     const response = await fetchImpl(url, {
       method,
-      headers: {
-        "content-type": "application/json",
-        ...headers
-      },
-      body: body === undefined ? undefined : JSON.stringify(body)
+      headers: isFormData
+        ? headers
+        : {
+            "content-type": "application/json",
+            ...headers
+          },
+      body:
+        body === undefined
+          ? undefined
+          : isFormData
+            ? body
+            : JSON.stringify(body)
     });
 
     return (await response.json()) as Promise<any>;
@@ -62,7 +89,7 @@ export const createHttpClient = (
   const request = <TResponse>(
     method: RequestMethod,
     path: string,
-    body?: unknown
+    body?: RequestBody
   ) =>
     options.requester<TResponse>(
       method,
@@ -142,6 +169,27 @@ export const createHttpClient = (
       searchPlacePoi: (input) => {
         const suffix = buildQuerySuffix(input);
         return request("GET", `${apiPaths.admin.searchPlacePoi}${suffix}`);
+      },
+      searchPlaceAmapMedia: (input) => {
+        const suffix = buildQuerySuffix(input);
+        return request(
+          "GET",
+          `${apiPaths.admin.searchPlaceAmapMedia}${suffix}`
+        );
+      },
+      uploadPlaceGalleryFile: (id, input) => {
+        return request(
+          "POST",
+          apiPaths.admin.uploadPlaceGalleryFile(id),
+          buildGalleryUploadFormData(input)
+        );
+      },
+      uploadPendingPlaceGalleryFile: (input) => {
+        return request(
+          "POST",
+          apiPaths.admin.uploadPendingPlaceGalleryFile,
+          buildGalleryUploadFormData(input)
+        );
       }
     }
   };

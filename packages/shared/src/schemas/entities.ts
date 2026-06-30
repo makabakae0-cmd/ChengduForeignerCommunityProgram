@@ -30,6 +30,29 @@ export const PlaceImportReviewMetadataSchema = z.object({
   review_notes: z.array(z.string())
 });
 
+export const PlaceExternalMediaSourceSchema = z.literal("amap");
+
+export const PlaceExternalMediaAttributionSchema = z.object({
+  label: z.string().min(1),
+  provider_name: z.string().min(1).default("Amap")
+});
+
+export const PlaceExternalMediaSchema = z.object({
+  source: PlaceExternalMediaSourceSchema,
+  source_place_id: z.string().min(1),
+  image_url: z.string().url(),
+  image_title: z.string().trim().min(1).nullable().default(null),
+  attribution: PlaceExternalMediaAttributionSchema
+});
+
+export const PlaceCoverSourceSchema = z.object({
+  source: PlaceExternalMediaSourceSchema,
+  source_place_id: z.string().min(1),
+  image_url: z.string().url(),
+  image_title: z.string().trim().min(1).nullable().default(null),
+  attribution: PlaceExternalMediaAttributionSchema
+});
+
 export const UserSchema = z.object({
   _id: z.string(),
   openid: z.string().optional(),
@@ -97,6 +120,7 @@ export const PlaceSchema = z.object({
   name_en: z.string(),
   cover_file_id: z.string().nullable(),
   cover_url: z.string().url().nullable(),
+  cover_source: PlaceCoverSourceSchema.nullable().default(null),
   category_level_1: PlaceTopLevelCategorySchema,
   category_level_2: z.string(),
   tag_ids: z.array(z.string()),
@@ -113,6 +137,7 @@ export const PlaceSchema = z.object({
   is_recommended: z.boolean(),
   recommended_rank: z.number().int().min(0),
   gallery_file_ids: z.array(z.string()),
+  external_gallery_media: z.array(PlaceExternalMediaSchema).default([]),
   gallery_urls: z.array(z.string().url()),
   supports_navigation: z.boolean(),
   supports_favorite: z.boolean(),

@@ -296,4 +296,112 @@ describe("shared api clients", () => {
       { "x-mock-user-id": "user_001" }
     );
   });
+
+  it("serializes admin Amap media search through shared client", async () => {
+    const mockClient = createMockClient({ actorId: "user_001" });
+    const requester = vi.fn(async () => ({
+      success: true,
+      requestId: "req_http_amap_media_search",
+      data: []
+    }));
+    const httpClient = createHttpClient({
+      actorId: "user_001",
+      baseUrl: "http://localhost:8787",
+      requester: requester as unknown as HttpRequester
+    });
+
+    const mockResult = await mockClient.admin.searchPlaceAmapMedia({
+      keyword: "桐梓林"
+    });
+    const httpResult = await httpClient.admin.searchPlaceAmapMedia({
+      keyword: "桐梓林",
+      city: "成都"
+    });
+
+    expect(mockResult.success).toBe(true);
+    expect(mockResult.data[0].image_candidates[0].source).toBe("amap");
+    expect(httpResult.success).toBe(true);
+    expect(requester).toHaveBeenCalledWith(
+      "GET",
+      "http://localhost:8787/admin/places/amap-media-search?keyword=%E6%A1%90%E6%A2%93%E6%9E%97&city=%E6%88%90%E9%83%BD",
+      undefined,
+      { "x-mock-user-id": "user_001" }
+    );
+  });
+
+  it("sends direct admin place gallery uploads as FormData", async () => {
+    const requester = vi.fn(async () => ({
+      success: true,
+      requestId: "req_http_gallery_upload",
+      data: {
+        file_asset: {
+          _id: "file_001",
+          file_id: "cloud://public/places/place_001/1.jpg",
+          cloud_path: "public/places/place_001/1.jpg",
+          visibility: "public",
+          biz_type: "place_gallery",
+          biz_id: "place_001",
+          uploaded_by: "user_001",
+          status: "active"
+        },
+        gallery_file_ids: ["cloud://public/places/place_001/1.jpg"]
+      }
+    }));
+    const httpClient = createHttpClient({
+      actorId: "user_001",
+      baseUrl: "http://localhost:8787",
+      requester: requester as unknown as HttpRequester
+    });
+
+    await httpClient.admin.uploadPlaceGalleryFile("place_001", {
+      file: new Blob(["image-bytes"], { type: "image/jpeg" }),
+      file_name: "entrance.jpg",
+      content_type: "image/jpeg"
+    });
+
+    expect(requester).toHaveBeenCalledWith(
+      "POST",
+      "http://localhost:8787/admin/places/place_001/gallery-files",
+      expect.any(FormData),
+      { "x-mock-user-id": "user_001" }
+    );
+  });
+
+  it("sends pending admin place gallery uploads as FormData", async () => {
+    const requester = vi.fn(async () => ({
+      success: true,
+      requestId: "req_http_pending_gallery_upload",
+      data: {
+        file_asset: {
+          _id: "file_pending_001",
+          file_id: "cloud://public/places/_pending/pending_001/1.jpg",
+          cloud_path: "public/places/_pending/pending_001/1.jpg",
+          visibility: "public",
+          biz_type: "place_gallery",
+          biz_id: "__pending_place_gallery__",
+          uploaded_by: "user_001",
+          status: "active"
+        },
+        gallery_file_ids: ["cloud://public/places/_pending/pending_001/1.jpg"]
+      }
+    }));
+    const httpClient = createHttpClient({
+      actorId: "user_001",
+      baseUrl: "http://localhost:8787",
+      requester: requester as unknown as HttpRequester
+    });
+
+    await httpClient.admin.uploadPendingPlaceGalleryFile({
+      file: new Blob(["image-bytes"], { type: "image/jpeg" }),
+      file_name: "entrance.jpg",
+      content_type: "image/jpeg"
+    });
+
+    expect(requester).toHaveBeenCalledWith(
+      "POST",
+      "http://localhost:8787/admin/places/gallery-files",
+      expect.any(FormData),
+      { "x-mock-user-id": "user_001" }
+    );
+  });
 });

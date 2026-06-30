@@ -1,4 +1,10 @@
-import { createMockService, isMockServiceError } from "@community-map/shared";
+import { randomUUID } from "node:crypto";
+
+import {
+  PENDING_PLACE_GALLERY_BIZ_ID,
+  createMockService,
+  isMockServiceError
+} from "@community-map/shared";
 
 import { apiError } from "../../lib/errors";
 import type { ApiProvider } from "../types";
@@ -110,6 +116,39 @@ export const createMockProvider = (): ApiProvider => {
       },
       async delete(id) {
         return service.places.delete(id);
+      },
+      async uploadGalleryFile(id, input, actorId) {
+        return withMockErrors(() => {
+          const place = id
+            ? service._state.places.find((item) => item._id === id)
+            : null;
+          if (id && !place) {
+            return null;
+          }
+
+          const safeFileName = input.file_name.replace(/[^\w.-]+/g, "-");
+          const targetPath = id ?? `_pending/${randomUUID()}`;
+          const cloudPath = `public/places/${targetPath}/${randomUUID()}-${safeFileName}`;
+          const asset = service.files.complete(
+            {
+              biz_type: "place_gallery",
+              biz_id: id ?? PENDING_PLACE_GALLERY_BIZ_ID,
+              file_id: `cloud://${cloudPath}`,
+              cloud_path: cloudPath,
+              visibility: "public"
+            },
+            actorId
+          );
+
+          if (place) {
+            place.gallery_file_ids = [...place.gallery_file_ids, asset.file_id];
+          }
+
+          return {
+            file_asset: asset,
+            gallery_file_ids: place?.gallery_file_ids ?? [asset.file_id]
+          };
+        });
       }
     },
     announcements: {

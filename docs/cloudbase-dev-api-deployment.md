@@ -20,13 +20,13 @@ CloudBase MCP status:
 
 NoSQL collections from live MCP query:
 
-| Collection | Count | Index count |
-| --- | ---: | ---: |
-| `configs` | 0 | 2 |
-| `file_assets` | 0 | 2 |
-| `operation_logs` | 0 | 2 |
-| `places` | 0 | 7 |
-| `users` | 0 | 2 |
+| Collection       | Count | Index count |
+| ---------------- | ----: | ----------: |
+| `configs`        |     0 |           2 |
+| `file_assets`    |     0 |           2 |
+| `operation_logs` |     0 |           2 |
+| `places`         |     0 |           7 |
+| `users`          |     0 |           2 |
 
 `places` indexes verified live:
 
@@ -111,11 +111,11 @@ https://cloud1-d7gxdk8t43bd639c0.service.tcloudbase.com/api
 
 Results from 2026-06-22:
 
-| Endpoint | HTTP status | Body summary | Gateway request ID | App request ID |
-| --- | ---: | --- | --- | --- |
-| `GET /health` | 200 | `{ "ok": true }` | `bc257000-fcda-4822-a4e4-8f1c323ce523` | not enveloped |
-| `GET /places?page=1&pageSize=5` | 200 | `items: [], total: 0` | `44e7e909-2894-4656-a5e1-3a8a44a8da7a` | `0b3d271f-d53b-4e43-84a7-081c955d3a01` |
-| `GET /places/map-markers` | 200 | `data: []` | `59a9e3e9-9cff-4ff1-9ac7-fdcdd0fca4a3` | `25db96e0-f516-49f3-a38e-6a45da98b1f6` |
+| Endpoint                        | HTTP status | Body summary          | Gateway request ID                     | App request ID                         |
+| ------------------------------- | ----------: | --------------------- | -------------------------------------- | -------------------------------------- |
+| `GET /health`                   |         200 | `{ "ok": true }`      | `bc257000-fcda-4822-a4e4-8f1c323ce523` | not enveloped                          |
+| `GET /places?page=1&pageSize=5` |         200 | `items: [], total: 0` | `44e7e909-2894-4656-a5e1-3a8a44a8da7a` | `0b3d271f-d53b-4e43-84a7-081c955d3a01` |
+| `GET /places/map-markers`       |         200 | `data: []`            | `59a9e3e9-9cff-4ff1-9ac7-fdcdd0fca4a3` | `25db96e0-f516-49f3-a38e-6a45da98b1f6` |
 
 Matching function log evidence:
 
@@ -175,16 +175,16 @@ Code changes deployed to `community-map-api` during acceptance:
 
 Live data and API acceptance:
 
-| Check | Result |
-| --- | --- |
-| Baseline before mutation | `GET /health` 200; public list `total=0`; map markers `0`; admin list `total=0` |
-| Volunteer import | 19 records created as `status="draft"` through `/admin/places` |
-| Published place | `CloudBase Live Acceptance Place`, id `place_0dc2aece-6aa6-46c5-8971-57646636a22a`, valid coordinates |
-| Public visibility | Published place appears in `/places`, `/places/map-markers`, and `/places/:id` |
-| Payload boundaries | Public list/marker/detail do not expose `import_review`; list/marker stay within public field boundaries |
-| Draft denial | Draft `place_d6af35be-acea-41b8-92ed-cfd0fa909072` is visible in admin, absent from public list/markers, and public detail returns 404 |
-| Admin update | PATCH on the published place is reflected through public list/detail; update timestamp `2026-06-23T15:29:05Z` |
-| Final live count | 20 dev places: 19 imported drafts + 1 published acceptance place |
+| Check                    | Result                                                                                                                                 |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Baseline before mutation | `GET /health` 200; public list `total=0`; map markers `0`; admin list `total=0`                                                        |
+| Volunteer import         | 19 records created as `status="draft"` through `/admin/places`                                                                         |
+| Published place          | `CloudBase Live Acceptance Place`, id `place_0dc2aece-6aa6-46c5-8971-57646636a22a`, valid coordinates                                  |
+| Public visibility        | Published place appears in `/places`, `/places/map-markers`, and `/places/:id`                                                         |
+| Payload boundaries       | Public list/marker/detail do not expose `import_review`; list/marker stay within public field boundaries                               |
+| Draft denial             | Draft `place_d6af35be-acea-41b8-92ed-cfd0fa909072` is visible in admin, absent from public list/markers, and public detail returns 404 |
+| Admin update             | PATCH on the published place is reflected through public list/detail; update timestamp `2026-06-23T15:29:05Z`                          |
+| Final live count         | 20 dev places: 19 imported drafts + 1 published acceptance place                                                                       |
 
 Gallery media result:
 
@@ -208,3 +208,61 @@ auto_test_openspec/complete-cloudbase-dev-places-live-acceptance/
 
 - Complete non-places live providers for events, discover, comments, announcements, notifications, auth, and files.
 - Decide final production auth/security rules before any production exposure.
+
+## 2026-06-30 Precreate Gallery Upload Deployment Evidence
+
+Target environment:
+
+```text
+cloud1-d7gxdk8t43bd639c0
+```
+
+Deployed backend:
+
+- Cloud function: `community-map-api`
+- Deploy command shape: `tcb fn deploy community-map-api --httpFn --force --dir apps/api/.cloudbase/community-map-api --config-file <temp>`
+- Function status after deploy: `Status=Active`, `AvailableStatus=Available`, `Type=HTTP`
+- Function code size after deploy: `830521`
+- Function detail RequestId: `3b79b698-46d7-4292-bace-c09bbe4322d9`
+- Function environment variables verified present: `API_PROVIDER=cloudbase`, `CLOUDBASE_PROVIDER_MODE=live`, `CLOUDBASE_ENV_ID=cloud1-d7gxdk8t43bd639c0`, `TENCENT_MAP_KEY`, `TENCENT_MAP_SECRET_KEY`, `AMAP_WEB_SERVICE_KEY`
+- Secret values were injected through CloudBase function environment configuration and were not committed to the repository.
+
+Deployed Admin hosting:
+
+- Hosting domain: `https://cloud1-d7gxdk8t43bd639c0-1441004938.tcloudbaseapp.com`
+- Hosted `/places` returned HTTP 200 after deploy.
+- Hosted `index.html` references current assets:
+  - `/assets/index-BVUeZrez.js`
+  - `/assets/index-B8R_GibO.css`
+- The deployed Admin bundle contains the create-before-upload hint and the pending upload client path.
+
+Online API acceptance, using CloudBase `/api` only:
+
+| Check                                  | Result                                                                                                                                                                        |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Health                                 | `GET /api/health` returned `{"ok":true}`                                                                                                                                      |
+| Pending gallery upload                 | `POST /api/admin/places/gallery-files` returned 201 and created a pending `place_gallery` file asset                                                                          |
+| Create place with pending gallery file | `POST /api/admin/places` returned 201 and created published place `place_e6697d8c-23f1-4a9b-b867-871698193fe9`                                                                |
+| Public detail                          | `GET /api/places/place_e6697d8c-23f1-4a9b-b867-871698193fe9` returned 200, `gallery_media.length=1`, `gallery_urls.length=1`, and the resolved gallery URL starts with `http` |
+| Public list                            | `GET /api/places?pageSize=3` returned the new published place in `data.items`                                                                                                 |
+| Map markers                            | `GET /api/places/map-markers` returned the new published place in marker data                                                                                                 |
+| Amap media search                      | `GET /api/admin/places/amap-media-search?keyword=Global%20Corner%20Cafe` returned 200 with 10 candidates                                                                      |
+
+Accepted live test place:
+
+```text
+place_e6697d8c-23f1-4a9b-b867-871698193fe9
+CloudBase 创建前图集测试 20260630122711
+```
+
+Accepted uploaded storage path:
+
+```text
+public/places/_pending/faa89faf-ad4e-425d-b266-e73497cc543f/fd94d50a-3ee9-4a0c-8e60-9b1157321d54-codex-cloudbase-20260630122711.jpg
+```
+
+Boundary:
+
+- This verifies the create-before-place direct gallery upload path in CloudBase live mode.
+- The storage object path remains under `_pending`; ownership is represented by the bound `file_assets.biz_id` after place creation.
+- Admin authorization still uses the current project mock actor header path; production authentication and final security rules remain separate release work.

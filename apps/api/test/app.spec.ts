@@ -488,6 +488,275 @@ describe("api routes", () => {
     }
   });
 
+  it("supports direct admin place gallery upload and validation errors", async () => {
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const createPlaceResponse = await fetch(`${baseUrl}/admin/places`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-mock-user-id": "user_001"
+        },
+        body: JSON.stringify({
+          name_zh: "直接上传地点",
+          name_en: "Direct Upload Place",
+          cover_file_id: null,
+          cover_url: null,
+          category_level_1: "community",
+          category_level_2: "support-desk",
+          tag_ids: [],
+          address_zh: "成都",
+          address_en: "Chengdu",
+          location: { latitude: 30.616, longitude: 104.064 },
+          business_hours_zh: "周一至周日",
+          business_hours_en: "Every day",
+          intro_zh: "直接上传测试",
+          intro_en: "Direct upload test",
+          recommended_reason_zh: null,
+          recommended_reason_en: null,
+          is_recommended: false,
+          recommended_rank: 0,
+          gallery_file_ids: [],
+          gallery_urls: [],
+          tencent_map_poi_id: null,
+          supports_navigation: true,
+          supports_favorite: true,
+          supports_share: true,
+          status: "published"
+        })
+      });
+      const createPlaceBody = await createPlaceResponse.json();
+      const placeId = createPlaceBody.data._id;
+      const uploadForm = new FormData();
+      uploadForm.set(
+        "file",
+        new Blob(["fake-jpeg-bytes"], { type: "image/jpeg" }),
+        "entrance.jpg"
+      );
+
+      const uploadResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}/gallery-files`,
+        {
+          method: "POST",
+          headers: {
+            "x-mock-user-id": "user_001"
+          },
+          body: uploadForm
+        }
+      );
+      const uploadBody = await uploadResponse.json();
+
+      expect(uploadResponse.status).toBe(201);
+      expect(uploadBody.data.file_asset).toMatchObject({
+        visibility: "public",
+        biz_type: "place_gallery",
+        biz_id: placeId,
+        uploaded_by: "user_001",
+        status: "active"
+      });
+      expect(uploadBody.data.file_asset.cloud_path).toContain(
+        `public/places/${placeId}/`
+      );
+      expect(uploadBody.data.gallery_file_ids).toEqual([
+        uploadBody.data.file_asset.file_id
+      ]);
+
+      const detailResponse = await fetch(`${baseUrl}/places/${placeId}`);
+      const detailBody = await detailResponse.json();
+
+      expect(detailResponse.status).toBe(200);
+      expect(detailBody.data.gallery_media).toHaveLength(1);
+      expect(detailBody.data.gallery_media[0].file_id).toBe(
+        uploadBody.data.file_asset.file_id
+      );
+      expect(detailBody.data.gallery_urls).toEqual([
+        detailBody.data.gallery_media[0].url
+      ]);
+
+      const forbiddenForm = new FormData();
+      forbiddenForm.set(
+        "file",
+        new Blob(["fake-jpeg-bytes"], { type: "image/jpeg" }),
+        "forbidden.jpg"
+      );
+      const forbiddenResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}/gallery-files`,
+        {
+          method: "POST",
+          headers: {
+            "x-mock-user-id": "user_002"
+          },
+          body: forbiddenForm
+        }
+      );
+      const forbiddenBody = await forbiddenResponse.json();
+
+      expect(forbiddenResponse.status).toBe(403);
+      expect(forbiddenBody.error.code).toBe("FORBIDDEN");
+
+      const missingPlaceForm = new FormData();
+      missingPlaceForm.set(
+        "file",
+        new Blob(["fake-jpeg-bytes"], { type: "image/jpeg" }),
+        "missing.jpg"
+      );
+      const missingPlaceResponse = await fetch(
+        `${baseUrl}/admin/places/place_missing_upload/gallery-files`,
+        {
+          method: "POST",
+          headers: {
+            "x-mock-user-id": "user_001"
+          },
+          body: missingPlaceForm
+        }
+      );
+      const missingPlaceBody = await missingPlaceResponse.json();
+
+      expect(missingPlaceResponse.status).toBe(404);
+      expect(missingPlaceBody.error.code).toBe("NOT_FOUND");
+
+      const invalidTypeForm = new FormData();
+      invalidTypeForm.set(
+        "file",
+        new Blob(["not an image"], { type: "text/plain" }),
+        "note.txt"
+      );
+      const invalidTypeResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}/gallery-files`,
+        {
+          method: "POST",
+          headers: {
+            "x-mock-user-id": "user_001"
+          },
+          body: invalidTypeForm
+        }
+      );
+      const invalidTypeBody = await invalidTypeResponse.json();
+
+      expect(invalidTypeResponse.status).toBe(400);
+      expect(invalidTypeBody.error.code).toBe("VALIDATION_ERROR");
+
+      const missingFileResponse = await fetch(
+        `${baseUrl}/admin/places/${placeId}/gallery-files`,
+        {
+          method: "POST",
+          headers: {
+            "x-mock-user-id": "user_001"
+          },
+          body: new FormData()
+        }
+      );
+      const missingFileBody = await missingFileResponse.json();
+
+      expect(missingFileResponse.status).toBe(400);
+      expect(missingFileBody.error.code).toBe("VALIDATION_ERROR");
+
+      const detailAfterInvalidResponse = await fetch(
+        `${baseUrl}/places/${placeId}`
+      );
+      const detailAfterInvalidBody = await detailAfterInvalidResponse.json();
+
+      expect(detailAfterInvalidBody.data.gallery_media).toHaveLength(1);
+    } finally {
+      await close();
+    }
+  });
+
+  it("binds pending gallery uploads when creating a place", async () => {
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const pendingForm = new FormData();
+      pendingForm.set(
+        "file",
+        new Blob(["pending-jpeg-bytes"], { type: "image/jpeg" }),
+        "pending-entrance.jpg"
+      );
+
+      const pendingUploadResponse = await fetch(
+        `${baseUrl}/admin/places/gallery-files`,
+        {
+          method: "POST",
+          headers: {
+            "x-mock-user-id": "user_001"
+          },
+          body: pendingForm
+        }
+      );
+      const pendingUploadBody = await pendingUploadResponse.json();
+
+      expect(pendingUploadResponse.status).toBe(201);
+      expect(pendingUploadBody.data.file_asset).toMatchObject({
+        visibility: "public",
+        biz_type: "place_gallery",
+        biz_id: "__pending_place_gallery__",
+        uploaded_by: "user_001",
+        status: "active"
+      });
+      expect(pendingUploadBody.data.gallery_file_ids).toEqual([
+        pendingUploadBody.data.file_asset.file_id
+      ]);
+
+      const createResponse = await fetch(`${baseUrl}/admin/places`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-mock-user-id": "user_001"
+        },
+        body: JSON.stringify({
+          name_zh: "创建前上传地点",
+          name_en: "Precreate Upload Place",
+          cover_file_id: null,
+          cover_url: null,
+          category_level_1: "community",
+          category_level_2: "support-desk",
+          tag_ids: [],
+          address_zh: "成都",
+          address_en: "Chengdu",
+          location: { latitude: 30.616, longitude: 104.064 },
+          business_hours_zh: "周一至周日",
+          business_hours_en: "Every day",
+          intro_zh: "创建前上传测试",
+          intro_en: "Precreate upload test",
+          recommended_reason_zh: null,
+          recommended_reason_en: null,
+          is_recommended: false,
+          recommended_rank: 0,
+          gallery_file_ids: [pendingUploadBody.data.file_asset.file_id],
+          gallery_urls: [],
+          tencent_map_poi_id: null,
+          supports_navigation: true,
+          supports_favorite: true,
+          supports_share: true,
+          status: "published"
+        })
+      });
+      const createBody = await createResponse.json();
+
+      expect(createResponse.status).toBe(201);
+      expect(createBody.data.gallery_file_ids).toEqual([
+        pendingUploadBody.data.file_asset.file_id
+      ]);
+
+      const detailResponse = await fetch(
+        `${baseUrl}/places/${createBody.data._id}`
+      );
+      const detailBody = await detailResponse.json();
+
+      expect(detailResponse.status).toBe(200);
+      expect(detailBody.data.gallery_media).toHaveLength(1);
+      expect(detailBody.data.gallery_media[0].file_id).toBe(
+        pendingUploadBody.data.file_asset.file_id
+      );
+      expect(detailBody.data.gallery_urls).toEqual([
+        detailBody.data.gallery_media[0].url
+      ]);
+    } finally {
+      await close();
+    }
+  });
+
   it("supports admin places metadata create, update, and publish visibility", async () => {
     const { baseUrl, close } = await createTestBaseUrl();
 
@@ -619,48 +888,50 @@ describe("api routes", () => {
     const originalFetch = globalThis.fetch;
     process.env.TENCENT_MAP_KEY = "test-map-key";
     process.env.TENCENT_MAP_SECRET_KEY = "test-secret-key";
-    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-      const url = input instanceof Request ? input.url : String(input);
+    const fetchMock = vi.fn(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input);
 
-      if (!url.startsWith("https://apis.map.qq.com/")) {
-        return originalFetch(input, init);
-      }
-
-      expect(url).toContain("https://apis.map.qq.com/ws/place/v1/search");
-      expect(url).toContain("keyword=%E6%A1%90%E6%A2%93%E6%9E%97");
-      expect(url).toContain("boundary=region%28%E6%88%90%E9%83%BD%2C0%29");
-      expect(url).toContain("page_size=10");
-      expect(url).toContain("sig=");
-
-      return new Response(
-        JSON.stringify({
-          status: 0,
-          message: "query ok",
-          data: [
-            {
-              id: "poi_tongzilin",
-              title: "桐梓林",
-              address: "四川省成都市武侯区桐梓林路",
-              category: "交通设施",
-              location: {
-                lat: 30.615,
-                lng: 104.062
-              },
-              ad_info: {
-                province: "四川省",
-                city: "成都市",
-                district: "武侯区"
-              }
-            }
-          ]
-        }),
-        {
-          headers: {
-            "content-type": "application/json"
-          }
+        if (!url.startsWith("https://apis.map.qq.com/")) {
+          return originalFetch(input, init);
         }
-      );
-    });
+
+        expect(url).toContain("https://apis.map.qq.com/ws/place/v1/search");
+        expect(url).toContain("keyword=%E6%A1%90%E6%A2%93%E6%9E%97");
+        expect(url).toContain("boundary=region%28%E6%88%90%E9%83%BD%2C0%29");
+        expect(url).toContain("page_size=10");
+        expect(url).toContain("sig=");
+
+        return new Response(
+          JSON.stringify({
+            status: 0,
+            message: "query ok",
+            data: [
+              {
+                id: "poi_tongzilin",
+                title: "桐梓林",
+                address: "四川省成都市武侯区桐梓林路",
+                category: "交通设施",
+                location: {
+                  lat: 30.615,
+                  lng: 104.062
+                },
+                ad_info: {
+                  province: "四川省",
+                  city: "成都市",
+                  district: "武侯区"
+                }
+              }
+            ]
+          }),
+          {
+            headers: {
+              "content-type": "application/json"
+            }
+          }
+        );
+      }
+    );
     vi.stubGlobal("fetch", fetchMock);
     const { baseUrl, close } = await createTestBaseUrl();
 
@@ -784,6 +1055,312 @@ describe("api routes", () => {
       } else {
         process.env.TENCENT_MAP_SECRET_KEY = previousTencentMapSecretKey;
       }
+    }
+  });
+
+  it("proxies admin Amap media search with normalized image candidates", async () => {
+    const previousAmapKey = process.env.AMAP_WEB_SERVICE_KEY;
+    const originalFetch = globalThis.fetch;
+    process.env.AMAP_WEB_SERVICE_KEY = "test-amap-key";
+    const fetchMock = vi.fn(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input);
+
+        if (!url.startsWith("https://restapi.amap.com/")) {
+          return originalFetch(input, init);
+        }
+
+        expect(url).toContain("https://restapi.amap.com/v3/place/text");
+        expect(url).toContain("keywords=%E6%A1%90%E6%A2%93%E6%9E%97");
+        expect(url).toContain("extensions=all");
+
+        return new Response(
+          JSON.stringify({
+            status: "1",
+            info: "OK",
+            pois: [
+              {
+                id: "B001",
+                name: "桐梓林",
+                address: "四川省成都市武侯区桐梓林路",
+                type: "生活服务",
+                location: "104.062,30.615",
+                pname: "四川省",
+                cityname: "成都市",
+                adname: "武侯区",
+                photos: [
+                  {
+                    title: "门头",
+                    url: "https://store.is.autonavi.com/showpic/B001.jpg"
+                  },
+                  {
+                    title: [],
+                    url: "https://store.is.autonavi.com/showpic/B001-empty-title.jpg"
+                  }
+                ]
+              },
+              {
+                id: "B002",
+                name: "无图地点",
+                address: [],
+                type: "生活服务",
+                location: "104.063,30.616",
+                photos: []
+              }
+            ]
+          }),
+          {
+            headers: {
+              "content-type": "application/json"
+            }
+          }
+        );
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const response = await fetch(
+        `${baseUrl}/admin/places/amap-media-search?keyword=${encodeURIComponent("桐梓林")}`,
+        {
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.data).toHaveLength(2);
+      expect(body.data[0].image_candidates[0]).toMatchObject({
+        source: "amap",
+        source_place_id: "B001",
+        image_url: "https://store.is.autonavi.com/showpic/B001.jpg",
+        image_title: "门头",
+        attribution: {
+          label: "Image source: Amap",
+          provider_name: "Amap"
+        }
+      });
+      expect(body.data[0].image_candidates[1].image_title).toBeNull();
+      expect(body.data[1].image_candidates).toEqual([]);
+
+      const forbiddenResponse = await fetch(
+        `${baseUrl}/admin/places/amap-media-search?keyword=${encodeURIComponent("桐梓林")}`,
+        {
+          headers: {
+            "x-mock-user-id": "user_002"
+          }
+        }
+      );
+      const forbiddenBody = await forbiddenResponse.json();
+
+      expect(forbiddenResponse.status).toBe(403);
+      expect(forbiddenBody.error.code).toBe("FORBIDDEN");
+    } finally {
+      await close();
+      vi.unstubAllGlobals();
+
+      if (previousAmapKey === undefined) {
+        delete process.env.AMAP_WEB_SERVICE_KEY;
+      } else {
+        process.env.AMAP_WEB_SERVICE_KEY = previousAmapKey;
+      }
+    }
+  });
+
+  it("returns clear admin Amap media search errors", async () => {
+    const previousAmapKey = process.env.AMAP_WEB_SERVICE_KEY;
+    const originalFetch = globalThis.fetch;
+    delete process.env.AMAP_WEB_SERVICE_KEY;
+    const { baseUrl, close } = await createTestBaseUrl();
+
+    try {
+      const missingKeyResponse = await fetch(
+        `${baseUrl}/admin/places/amap-media-search?keyword=${encodeURIComponent("桐梓林")}`,
+        {
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      const missingKeyBody = await missingKeyResponse.json();
+
+      expect(missingKeyResponse.status).toBe(500);
+      expect(missingKeyBody.error.code).toBe("CONFIGURATION_ERROR");
+
+      process.env.AMAP_WEB_SERVICE_KEY = "test-amap-key";
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+          const url = input instanceof Request ? input.url : String(input);
+
+          if (!url.startsWith("https://restapi.amap.com/")) {
+            return originalFetch(input, init);
+          }
+
+          return new Response(
+            JSON.stringify({ status: "0", info: "INVALID_USER_KEY" })
+          );
+        })
+      );
+
+      const upstreamResponse = await fetch(
+        `${baseUrl}/admin/places/amap-media-search?keyword=${encodeURIComponent("桐梓林")}`,
+        {
+          headers: {
+            "x-mock-user-id": "user_001"
+          }
+        }
+      );
+      const upstreamBody = await upstreamResponse.json();
+
+      expect(upstreamResponse.status).toBe(502);
+      expect(upstreamBody.error.code).toBe("UPSTREAM_ERROR");
+      expect(upstreamBody.error.message).toBe("INVALID_USER_KEY");
+    } finally {
+      await close();
+      vi.unstubAllGlobals();
+
+      if (previousAmapKey === undefined) {
+        delete process.env.AMAP_WEB_SERVICE_KEY;
+      } else {
+        process.env.AMAP_WEB_SERVICE_KEY = previousAmapKey;
+      }
+    }
+  });
+
+  it("persists external place media through admin create and update", async () => {
+    const { baseUrl, close } = await createTestBaseUrl();
+    const externalMedia = {
+      source: "amap",
+      source_place_id: "B001",
+      image_url: "https://store.is.autonavi.com/showpic/B001.jpg",
+      image_title: "门头",
+      attribution: {
+        label: "Image source: Amap",
+        provider_name: "Amap"
+      }
+    };
+
+    try {
+      const createResponse = await fetch(`${baseUrl}/admin/places`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-mock-user-id": "user_001"
+        },
+        body: JSON.stringify({
+          name_zh: "外部图片地点",
+          name_en: "External Media Place",
+          cover_file_id: null,
+          cover_url: externalMedia.image_url,
+          cover_source: externalMedia,
+          category_level_1: "community",
+          category_level_2: "support-desk",
+          tag_ids: ["community"],
+          address_zh: "成都",
+          address_en: "Chengdu",
+          location: { latitude: 30.621, longitude: 104.068 },
+          business_hours_zh: "周一至周日",
+          business_hours_en: "Every day",
+          intro_zh: "外部图片测试",
+          intro_en: "External media test",
+          recommended_reason_zh: null,
+          recommended_reason_en: null,
+          is_recommended: false,
+          recommended_rank: 0,
+          gallery_file_ids: [],
+          external_gallery_media: [externalMedia],
+          gallery_urls: [],
+          tencent_map_poi_id: null,
+          supports_navigation: true,
+          supports_favorite: true,
+          supports_share: true,
+          status: "published"
+        })
+      });
+      const createBody = await createResponse.json();
+
+      expect(createResponse.status).toBe(201);
+      expect(createBody.data.external_gallery_media).toHaveLength(1);
+      expect(createBody.data.gallery_file_ids).toEqual([]);
+
+      const detailResponse = await fetch(
+        `${baseUrl}/places/${createBody.data._id}`
+      );
+      const detailBody = await detailResponse.json();
+
+      expect(detailResponse.status).toBe(200);
+      expect(detailBody.data.cover_source.source).toBe("amap");
+      expect(detailBody.data.external_gallery_media).toEqual([externalMedia]);
+      expect(detailBody.data.gallery_media).toEqual([]);
+      expect(detailBody.data.gallery_urls).toEqual([]);
+
+      const listResponse = await fetch(
+        `${baseUrl}/places?keyword=External%20Media%20Place`
+      );
+      const listBody = await listResponse.json();
+      const markerResponse = await fetch(`${baseUrl}/places/map-markers`);
+      const markerBody = await markerResponse.json();
+      const marker = markerBody.data.find(
+        (item: { _id: string }) => item._id === createBody.data._id
+      );
+
+      expect(listResponse.status).toBe(200);
+      expect(listBody.data.items[0]).not.toHaveProperty(
+        "external_gallery_media"
+      );
+      expect(listBody.data.items[0]).not.toHaveProperty("cover_source");
+      expect(marker).not.toHaveProperty("external_gallery_media");
+      expect(marker).not.toHaveProperty("cover_source");
+
+      const invalidUpdateResponse = await fetch(
+        `${baseUrl}/admin/places/${createBody.data._id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_001"
+          },
+          body: JSON.stringify({
+            external_gallery_media: [
+              {
+                ...externalMedia,
+                source: "unsupported"
+              }
+            ]
+          })
+        }
+      );
+      const invalidUpdateBody = await invalidUpdateResponse.json();
+
+      expect(invalidUpdateResponse.status).toBe(400);
+      expect(invalidUpdateBody.error.code).toBe("VALIDATION_ERROR");
+
+      const removeResponse = await fetch(
+        `${baseUrl}/admin/places/${createBody.data._id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "x-mock-user-id": "user_001"
+          },
+          body: JSON.stringify({
+            cover_source: null,
+            external_gallery_media: []
+          })
+        }
+      );
+      const removeBody = await removeResponse.json();
+
+      expect(removeResponse.status).toBe(200);
+      expect(removeBody.data.cover_source).toBeNull();
+      expect(removeBody.data.external_gallery_media).toEqual([]);
+      expect(removeBody.data.gallery_file_ids).toEqual([]);
+    } finally {
+      await close();
     }
   });
 

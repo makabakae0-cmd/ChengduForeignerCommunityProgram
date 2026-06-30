@@ -9,6 +9,7 @@ import type {
   Notification,
   PageResult,
   Place,
+  DirectPlaceGalleryUploadResponse,
   DeletePlaceResponse,
   PlaceDetail,
   PlaceListItem,
@@ -97,6 +98,15 @@ export interface ApiProvider {
     create(input: Partial<Place>): Promise<Place>;
     update(id: string, input: Partial<Place>): Promise<Place | null>;
     delete(id: string): Promise<DeletePlaceResponse | null>;
+    uploadGalleryFile(
+      id: string | null,
+      input: {
+        file_name: string;
+        content_type: string;
+        buffer: Buffer;
+      },
+      actorId?: string
+    ): Promise<DirectPlaceGalleryUploadResponse | null>;
   };
   announcements: {
     list(input: {

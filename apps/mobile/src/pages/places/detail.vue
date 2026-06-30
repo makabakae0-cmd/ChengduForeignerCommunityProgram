@@ -24,22 +24,45 @@ const detailCopy = computed(() => getPlacesCopy(state.locale, "detail"));
 const { isFavorite, toggleFavorite } = usePlaceFavoriteState(
   () => place.value?._id ?? null
 );
-const galleryMedia = computed(() => {
+const failedExternalImages = ref<Set<string>>(new Set());
+const galleryItems = computed(() => {
   if (!place.value) {
     return [];
   }
 
-  if (place.value.gallery_media.length > 0) {
-    return place.value.gallery_media;
-  }
+  const ownedMedia =
+    place.value.gallery_media.length > 0
+      ? place.value.gallery_media
+      : place.value.gallery_urls.map((url, index) => ({
+          file_id: `legacy-gallery-${index + 1}`,
+          cloud_path: "",
+          url,
+          alt_zh: `${place.value?.name_zh ?? ""} 图集 ${index + 1}`,
+          alt_en: `${place.value?.name_en ?? ""} gallery ${index + 1}`
+        }));
 
-  return place.value.gallery_urls.map((url, index) => ({
-    file_id: `legacy-gallery-${index + 1}`,
-    cloud_path: "",
-    url,
-    alt_zh: `${place.value?.name_zh ?? ""} 图集 ${index + 1}`,
-    alt_en: `${place.value?.name_en ?? ""} gallery ${index + 1}`
-  }));
+  return [
+    ...ownedMedia.map((media) => ({
+      key: `owned-${media.file_id}`,
+      kind: "owned" as const,
+      url: media.url,
+      alt_zh: media.alt_zh,
+      alt_en: media.alt_en,
+      attribution: null
+    })),
+    ...place.value.external_gallery_media.map((media, index) => ({
+      key: `external-${media.source_place_id}-${index}`,
+      kind: "external" as const,
+      url: media.image_url,
+      alt_zh:
+        media.image_title ??
+        `${place.value?.name_zh ?? ""} 外部图集 ${index + 1}`,
+      alt_en:
+        media.image_title ??
+        `${place.value?.name_en ?? ""} external gallery ${index + 1}`,
+      attribution: media.attribution.label
+    }))
+  ];
 });
 const shareTitle = computed(() => {
   if (!place.value) {
@@ -142,12 +165,15 @@ const openNavigation = () => {
     return;
   }
 
-  openPlaceNativeNavigation({
-    ...buildPlaceDetailNavigationTarget(place.value.navigation, state.locale)
-  }, {
-    unavailable: detailCopy.value.navigationUnavailable,
-    failed: detailCopy.value.navigationFailed
-  });
+  openPlaceNativeNavigation(
+    {
+      ...buildPlaceDetailNavigationTarget(place.value.navigation, state.locale)
+    },
+    {
+      unavailable: detailCopy.value.navigationUnavailable,
+      failed: detailCopy.value.navigationFailed
+    }
+  );
 };
 
 const openMapPosition = () => {
@@ -222,11 +248,19 @@ const shareButtonLabel = computed(() =>
     ? detailCopy.value.shareUnavailable
     : detailCopy.value.shareEntry
 );
+
+const markExternalImageFailed = (url: string) => {
+  failedExternalImages.value = new Set([...failedExternalImages.value, url]);
+};
 </script>
 
 <template>
   <view class="page">
-    <AsyncStateCard v-if="loading" variant="loading" :text="detailCopy.loading" />
+    <AsyncStateCard
+      v-if="loading"
+      variant="loading"
+      :text="detailCopy.loading"
+    />
     <AsyncStateCard v-else-if="error" variant="error" :text="error" />
     <SectionPanel
       v-else-if="place"
@@ -239,15 +273,22 @@ const shareButtonLabel = computed(() =>
         :src="place.cover_url"
         mode="aspectFill"
       />
+      <view v-if="place.cover_source" class="media-attribution">
+        {{ place.cover_source.attribution.label }}
+      </view>
       <view v-if="place.tag_ids.length" class="chip-row">
-        <text v-for="tag in place.tag_ids" :key="tag" class="place-chip">#{{ tag }}</text>
+        <text v-for="tag in place.tag_ids" :key="tag" class="place-chip"
+          >#{{ tag }}</text
+        >
       </view>
       <view
         v-if="localizedText(place.address_zh, place.address_en)"
         class="info-block"
       >
         <view class="info-label">{{ detailCopy.address }}</view>
-        <view class="line">{{ localizedText(place.address_zh, place.address_en) }}</view>
+        <view class="line">{{
+          localizedText(place.address_zh, place.address_en)
+        }}</view>
       </view>
       <view
         v-if="localizedText(place.business_hours_zh, place.business_hours_en)"
@@ -258,9 +299,14 @@ const shareButtonLabel = computed(() =>
           {{ localizedText(place.business_hours_zh, place.business_hours_en) }}
         </view>
       </view>
-      <view v-if="localizedText(place.intro_zh, place.intro_en)" class="info-block">
+      <view
+        v-if="localizedText(place.intro_zh, place.intro_en)"
+        class="info-block"
+      >
         <view class="info-label">{{ detailCopy.intro }}</view>
-        <view class="line">{{ localizedText(place.intro_zh, place.intro_en) }}</view>
+        <view class="line">{{
+          localizedText(place.intro_zh, place.intro_en)
+        }}</view>
       </view>
       <view v-if="place.is_recommended" class="place-badge">
         {{
@@ -274,19 +320,42 @@ const shareButtonLabel = computed(() =>
       <view class="gallery">
         <view class="info-label">{{ detailCopy.gallery }}</view>
         <scroll-view
-          v-if="galleryMedia.length"
+          v-if="galleryItems.length"
           class="gallery-scroll"
           scroll-x
           enable-flex
         >
-          <image
-            v-for="media in galleryMedia"
-            :key="media.file_id"
-            class="gallery-item"
-            :src="media.url"
-            :alt="pickLocalized(state.locale, media.alt_zh, media.alt_en)"
-            mode="aspectFill"
-          />
+          <view
+            v-for="media in galleryItems"
+            :key="media.key"
+            class="gallery-card"
+          >
+            <view
+              v-if="
+                media.kind === 'external' && failedExternalImages.has(media.url)
+              "
+              class="gallery-fallback"
+            >
+              <text>{{
+                state.locale === "zh"
+                  ? "外部图片暂不可用"
+                  : "External image unavailable"
+              }}</text>
+            </view>
+            <image
+              v-else
+              class="gallery-item"
+              :src="media.url"
+              :alt="pickLocalized(state.locale, media.alt_zh, media.alt_en)"
+              mode="aspectFill"
+              @error="
+                media.kind === 'external' && markExternalImageFailed(media.url)
+              "
+            />
+            <view v-if="media.attribution" class="media-attribution">
+              {{ media.attribution }}
+            </view>
+          </view>
         </scroll-view>
         <AsyncStateCard v-else variant="empty" :text="detailCopy.noGallery" />
       </view>
@@ -298,10 +367,7 @@ const shareButtonLabel = computed(() =>
         >
           {{ detailCopy.openNavigation }}
         </button>
-        <button
-          class="place-action secondary"
-          @click="openMapPosition"
-        >
+        <button class="place-action secondary" @click="openMapPosition">
           {{ detailCopy.openMapPosition }}
         </button>
       </view>
@@ -312,7 +378,9 @@ const shareButtonLabel = computed(() =>
           :disabled="place.supports_favorite === false"
           @click="toggleFavoriteState"
         >
-          {{ isFavorite ? detailCopy.favoriteActive : detailCopy.favoriteEntry }}
+          {{
+            isFavorite ? detailCopy.favoriteActive : detailCopy.favoriteEntry
+          }}
         </button>
         <button
           class="place-action ghost"
@@ -395,13 +463,41 @@ const shareButtonLabel = computed(() =>
   white-space: nowrap;
 }
 
-.gallery-item {
-  display: inline-block;
+.gallery-card {
+  display: inline-flex;
+  flex-direction: column;
   width: 520rpx;
-  height: 320rpx;
   margin-right: 16rpx;
+  vertical-align: top;
+}
+
+.gallery-item {
+  display: block;
+  width: 100%;
+  height: 320rpx;
   border-radius: 12rpx;
   background: #e5e7eb;
+}
+
+.gallery-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 320rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  background: #f3f4f6;
+  color: #64748b;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.media-attribution {
+  margin: 6rpx 0 12rpx;
+  color: #64748b;
+  font-size: 22rpx;
+  line-height: 1.4;
 }
 
 .place-action {

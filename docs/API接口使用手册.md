@@ -136,6 +136,12 @@ Admin 地点腾讯地图搜索由 API 端代理调用腾讯位置服务 WebServi
 - 不要把腾讯地图 key 配成 Admin 前端 `VITE_` 变量；静态站点包会暴露这类变量。
 - CloudBase `community-map-api` 函数配置 key 时，保留现有 `API_PROVIDER=cloudbase`、`CLOUDBASE_PROVIDER_MODE=live`、`CLOUDBASE_ENV_ID=cloud1-d7gxdk8t43bd639c0`。
 
+Admin 地点 Amap 图片候选搜索同样由 API 端代理：
+
+- `AMAP_WEB_SERVICE_KEY`：必填，Amap WebService Key，仅配置在 API/CloudBase 函数环境。
+- Amap 图片仅作为外部来源引用保存到 `external_gallery_media` 或 `cover_source`；本系统不下载、代理、缓存、转码或重新上传 Amap 图片。
+- Mobile 详情展示外部图片时必须显示来源归因；自有上传图片继续通过 `gallery_file_ids` / `gallery_media` 表达。
+
 ## 3. 快速启动
 
 启动 API：
@@ -807,26 +813,28 @@ curl http://127.0.0.1:8787/places/map-markers
 
 关键字段：
 
-| 字段                                      | 类型                | 说明                                  |
-| ----------------------------------------- | ------------------- | ------------------------------------- |
-| `_id`                                     | string              | 地点 ID                               |
-| `community_id`                            | string              | 社区                                  |
-| `name_zh` / `name_en`                     | string              | 名称                                  |
-| `cover_url`                               | URL/null            | 封面                                  |
-| `category_level_1` / `category_level_2`   | string              | 分类                                  |
-| `tag_ids`                                 | string[]            | 标签                                  |
-| `address_zh` / `address_en`               | string              | 完整地址                              |
-| `location`                                | Coordinates         | 经纬度                                |
-| `business_hours_zh` / `business_hours_en` | string              | 营业时间                              |
-| `intro_zh` / `intro_en`                   | string              | 简介                                  |
-| `gallery_media`                           | PlaceGalleryMedia[] | 主图集字段                            |
-| `gallery_urls`                            | URL[]               | 由 `gallery_media.url` 派生的兼容字段 |
-| `is_recommended`                          | boolean             | 是否推荐                              |
-| `supports_navigation`                     | boolean             | 是否支持导航                          |
-| `supports_favorite`                       | boolean             | 是否支持收藏                          |
-| `supports_share`                          | boolean             | 是否支持分享                          |
-| `navigation`                              | object              | 导航信息                              |
-| `share`                                   | object              | 分享信息                              |
+| 字段                                      | 类型                 | 说明                                  |
+| ----------------------------------------- | -------------------- | ------------------------------------- |
+| `_id`                                     | string               | 地点 ID                               |
+| `community_id`                            | string               | 社区                                  |
+| `name_zh` / `name_en`                     | string               | 名称                                  |
+| `cover_url`                               | URL/null             | 封面                                  |
+| `cover_source`                            | object/null          | 外部封面来源归因；非外部封面为 `null` |
+| `category_level_1` / `category_level_2`   | string               | 分类                                  |
+| `tag_ids`                                 | string[]             | 标签                                  |
+| `address_zh` / `address_en`               | string               | 完整地址                              |
+| `location`                                | Coordinates          | 经纬度                                |
+| `business_hours_zh` / `business_hours_en` | string               | 营业时间                              |
+| `intro_zh` / `intro_en`                   | string               | 简介                                  |
+| `gallery_media`                           | PlaceGalleryMedia[]  | 主图集字段                            |
+| `external_gallery_media`                  | PlaceExternalMedia[] | 外部来源图集字段                      |
+| `gallery_urls`                            | URL[]                | 由 `gallery_media.url` 派生的兼容字段 |
+| `is_recommended`                          | boolean              | 是否推荐                              |
+| `supports_navigation`                     | boolean              | 是否支持导航                          |
+| `supports_favorite`                       | boolean              | 是否支持收藏                          |
+| `supports_share`                          | boolean              | 是否支持分享                          |
+| `navigation`                              | object               | 导航信息                              |
+| `share`                                   | object               | 分享信息                              |
 
 `gallery_media`：
 
@@ -837,6 +845,21 @@ curl http://127.0.0.1:8787/places/map-markers
   "url": "https://example.com/a.jpg",
   "alt_zh": "图集 1",
   "alt_en": "gallery 1"
+}
+```
+
+`external_gallery_media`：
+
+```json
+{
+  "source": "amap",
+  "source_place_id": "B001",
+  "image_url": "https://store.is.autonavi.com/showpic/B001.jpg",
+  "image_title": "门头",
+  "attribution": {
+    "label": "Image source: Amap",
+    "provider_name": "Amap"
+  }
 }
 ```
 
@@ -875,14 +898,14 @@ Query：
 
 响应 data：`PlacePoiSearchItem[]`
 
-| 字段       | 类型   | 说明                           |
-| ---------- | ------ | ------------------------------ |
-| `id`       | string | 腾讯地图 POI ID 或稳定 fallback |
-| `title`    | string | 腾讯地图地点名称               |
-| `address`  | string | 腾讯地图中文地址               |
-| `category` | string/null | 腾讯地图分类              |
-| `location` | object | `{ latitude, longitude }`      |
-| `province` / `city` / `district` | string/null | 行政区信息 |
+| 字段                             | 类型        | 说明                            |
+| -------------------------------- | ----------- | ------------------------------- |
+| `id`                             | string      | 腾讯地图 POI ID 或稳定 fallback |
+| `title`                          | string      | 腾讯地图地点名称                |
+| `address`                        | string      | 腾讯地图中文地址                |
+| `category`                       | string/null | 腾讯地图分类                    |
+| `location`                       | object      | `{ latitude, longitude }`       |
+| `province` / `city` / `district` | string/null | 行政区信息                      |
 
 示例：
 
@@ -896,6 +919,34 @@ curl 'http://127.0.0.1:8787/admin/places/poi-search?keyword=桐梓林' \
 - `400 VALIDATION_ERROR`：缺少或传入空 `keyword`。
 - `500 CONFIGURATION_ERROR`：API 端未配置 `TENCENT_MAP_KEY`。
 - `502 UPSTREAM_ERROR`：腾讯地图接口不可用、返回非 0 状态或响应结构不符合预期。
+
+### GET `/admin/places/amap-media-search`
+
+用途：管理端搜索 Amap POI 并返回规范化图片候选，用于选择外部封面或外部图集图片。
+
+权限：`community_admin` 或 `system_admin`。
+
+Query：
+
+| 字段      | 类型   | 必填 | 默认值 | 说明                |
+| --------- | ------ | ---- | ------ | ------------------- |
+| `keyword` | string | 是   | -      | 地点关键词          |
+| `city`    | string | 否   | `成都` | Amap 城市过滤关键词 |
+
+响应 data：`PlaceAmapMediaSearchItem[]`，每个候选含 `image_candidates`。图片候选字段为 `source="amap"`、`source_place_id`、`image_url`、`image_title`、`attribution`。
+
+示例：
+
+```bash
+curl 'http://127.0.0.1:8787/admin/places/amap-media-search?keyword=桐梓林' \
+  -H 'x-mock-user-id: user_001'
+```
+
+关键错误：
+
+- `400 VALIDATION_ERROR`：缺少或传入空 `keyword`。
+- `500 CONFIGURATION_ERROR`：API 端未配置 `AMAP_WEB_SERVICE_KEY`。
+- `502 UPSTREAM_ERROR`：Amap 接口不可用、返回失败状态或响应结构不符合预期。
 
 ### POST `/admin/places`
 
@@ -916,11 +967,13 @@ Body：
 | `intro_zh` / `intro_en`                           | string                            | 是   | -       | 简介                 |
 | `cover_file_id`                                   | string/null                       | 否   | `null`  | 封面文件 ID          |
 | `cover_url`                                       | URL/null                          | 否   | `null`  | 封面 URL             |
+| `cover_source`                                    | object/null                       | 否   | `null`  | 外部封面来源归因     |
 | `tag_ids`                                         | string[]                          | 否   | `[]`    | 标签                 |
 | `recommended_reason_zh` / `recommended_reason_en` | string/null                       | 否   | `null`  | 推荐理由             |
 | `is_recommended`                                  | boolean                           | 否   | `false` | 是否推荐             |
 | `recommended_rank`                                | number                            | 否   | `0`     | 推荐排序             |
 | `gallery_file_ids`                                | string[]                          | 否   | `[]`    | 图集文件 ID          |
+| `external_gallery_media`                          | PlaceExternalMedia[]              | 否   | `[]`    | 外部来源图集引用     |
 | `gallery_urls`                                    | URL[]                             | 否   | `[]`    | 兼容图集 URL         |
 | `tencent_map_poi_id`                              | string/null                       | 否   | `null`  | 腾讯地图 POI         |
 | `supports_navigation`                             | boolean                           | 否   | `true`  | 支持导航             |
@@ -975,6 +1028,93 @@ curl -X PATCH http://127.0.0.1:8787/admin/places/place_001 \
   -H 'x-mock-user-id: user_001' \
   -d '{"is_recommended":true,"recommended_rank":1}'
 ```
+
+### POST `/admin/places/gallery-files`
+
+用途：管理端在创建地点前直接上传自有图集图片。成功后后端创建 completed active `FileAsset`，先以 pending 归属记录；创建地点时如果提交了返回的 `file_id`，后端会自动把该资产绑定到新地点。该路径不用于外部 Amap 图片；Amap 图片只保存为外部引用。
+
+权限：`community_admin` 或 `system_admin`。
+
+请求：`multipart/form-data`
+
+| 字段   | 类型 | 必填 | 说明                                                                     |
+| ------ | ---- | ---- | ------------------------------------------------------------------------ |
+| `file` | file | 是   | 支持 `image/jpeg`、`image/png`、`image/webp`、`image/gif`，当前上限 5 MB |
+
+响应 data：
+
+```json
+{
+  "file_asset": {
+    "_id": "file_001",
+    "file_id": "cloud://...",
+    "cloud_path": "public/places/_pending/upload/a.jpg",
+    "visibility": "public",
+    "biz_type": "place_gallery",
+    "biz_id": "__pending_place_gallery__",
+    "uploaded_by": "user_001",
+    "status": "active"
+  },
+  "gallery_file_ids": ["cloud://..."]
+}
+```
+
+示例：
+
+```bash
+curl -X POST http://127.0.0.1:8787/admin/places/gallery-files \
+  -H 'x-mock-user-id: user_001' \
+  -F 'file=@./entrance.jpg;type=image/jpeg'
+```
+
+关键错误：
+
+- `400 VALIDATION_ERROR`：缺少文件、文件类型不支持或文件超过大小限制。
+- `403 FORBIDDEN`：actor 不是 `community_admin` / `system_admin`。
+
+### POST `/admin/places/:id/gallery-files`
+
+用途：管理端为已存在地点直接上传自有图集图片。成功后后端创建 completed active `FileAsset`，并将新 `file_id` 追加到目标地点的 `gallery_file_ids`。该路径不用于外部 Amap 图片；Amap 图片只保存为外部引用。
+
+权限：`community_admin` 或 `system_admin`。
+
+请求：`multipart/form-data`
+
+| 字段   | 类型 | 必填 | 说明                                                                     |
+| ------ | ---- | ---- | ------------------------------------------------------------------------ |
+| `file` | file | 是   | 支持 `image/jpeg`、`image/png`、`image/webp`、`image/gif`，当前上限 5 MB |
+
+响应 data：
+
+```json
+{
+  "file_asset": {
+    "_id": "file_001",
+    "file_id": "cloud://...",
+    "cloud_path": "public/places/place_001/a.jpg",
+    "visibility": "public",
+    "biz_type": "place_gallery",
+    "biz_id": "place_001",
+    "uploaded_by": "user_001",
+    "status": "active"
+  },
+  "gallery_file_ids": ["cloud://..."]
+}
+```
+
+示例：
+
+```bash
+curl -X POST http://127.0.0.1:8787/admin/places/place_001/gallery-files \
+  -H 'x-mock-user-id: user_001' \
+  -F 'file=@./entrance.jpg;type=image/jpeg'
+```
+
+关键错误：
+
+- `400 VALIDATION_ERROR`：缺少文件、文件类型不支持或文件超过大小限制。
+- `403 FORBIDDEN`：actor 不是 `community_admin` / `system_admin`。
+- `404 NOT_FOUND`：目标地点不存在。
 
 ### DELETE `/admin/places/:id`
 
@@ -1252,20 +1392,23 @@ curl -X POST http://127.0.0.1:8787/files/private-url \
 
 ## 13. 管理后台接口汇总
 
-| 模块     | 方法     | 路径                                   | 权限        | 用途                 |
-| -------- | -------- | -------------------------------------- | ----------- | -------------------- |
-| Events   | `POST`   | `/admin/events`                        | admin       | 创建活动             |
-| Events   | `PATCH`  | `/admin/events/:id`                    | admin       | 更新活动             |
-| Events   | `POST`   | `/admin/events/:id/review`             | admin       | 审核活动             |
-| Events   | `POST`   | `/admin/events/:id/checkin`            | admin       | 核销票据             |
-| Discover | `POST`   | `/admin/discover/posts/:id/moderation` | admin       | 审核/治理帖子        |
-| Places   | `GET`    | `/admin/places`                        | admin       | 地点列表             |
-| Places   | `POST`   | `/admin/places`                        | admin       | 创建地点             |
-| Places   | `PATCH`  | `/admin/places/:id`                    | admin       | 更新地点             |
-| Places   | `DELETE` | `/admin/places/:id`                    | admin       | 删除地点             |
-| Files    | `POST`   | `/files/upload-requests`               | conditional | 创建上传请求         |
-| Files    | `POST`   | `/files/complete`                      | conditional | 完成文件登记         |
-| Files    | `POST`   | `/files/private-url`                   | actor       | 获取私有文件临时地址 |
+| 模块     | 方法     | 路径                                   | 权限        | 用途                   |
+| -------- | -------- | -------------------------------------- | ----------- | ---------------------- |
+| Events   | `POST`   | `/admin/events`                        | admin       | 创建活动               |
+| Events   | `PATCH`  | `/admin/events/:id`                    | admin       | 更新活动               |
+| Events   | `POST`   | `/admin/events/:id/review`             | admin       | 审核活动               |
+| Events   | `POST`   | `/admin/events/:id/checkin`            | admin       | 核销票据               |
+| Discover | `POST`   | `/admin/discover/posts/:id/moderation` | admin       | 审核/治理帖子          |
+| Places   | `GET`    | `/admin/places`                        | admin       | 地点列表               |
+| Places   | `POST`   | `/admin/places`                        | admin       | 创建地点               |
+| Places   | `PATCH`  | `/admin/places/:id`                    | admin       | 更新地点               |
+| Places   | `GET`    | `/admin/places/amap-media-search`      | admin       | Amap 图片候选搜索      |
+| Places   | `POST`   | `/admin/places/gallery-files`          | admin       | 创建前上传地点图集图片 |
+| Places   | `POST`   | `/admin/places/:id/gallery-files`      | admin       | 直接追加地点图集图片   |
+| Places   | `DELETE` | `/admin/places/:id`                    | admin       | 删除地点               |
+| Files    | `POST`   | `/files/upload-requests`               | conditional | 创建上传请求           |
+| Files    | `POST`   | `/files/complete`                      | conditional | 完成文件登记           |
+| Files    | `POST`   | `/files/private-url`                   | actor       | 获取私有文件临时地址   |
 
 `conditional` 表示普通文件需要 actor，place gallery 需要 admin。
 

@@ -31,7 +31,8 @@ export const createMockDataset = (): MockDataset => ({
       openid: "openid_001",
       unionid: "unionid_001",
       nickname: "Jerry",
-      avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e",
+      avatar_url:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e",
       phone: "13800000000",
       preferred_language: "zh",
       role_flags: ["user", "community_admin", "system_admin"],
@@ -42,7 +43,8 @@ export const createMockDataset = (): MockDataset => ({
       openid: "openid_002",
       unionid: "unionid_002",
       nickname: "Emma",
-      avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
+      avatar_url:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
       phone: "13900000000",
       preferred_language: "en",
       role_flags: ["user", "organizer"],
@@ -52,7 +54,8 @@ export const createMockDataset = (): MockDataset => ({
       _id: "user_inactive",
       openid: "openid_inactive",
       nickname: "Inactive User",
-      avatar_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9",
+      avatar_url:
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9",
       preferred_language: "en",
       role_flags: ["user"],
       status: "inactive"
@@ -208,6 +211,7 @@ export const createMockDataset = (): MockDataset => ({
       name_en: "Tongzilin Community Center",
       cover_file_id: "cloud://place-cover-001",
       cover_url: "https://example.com/public/places/place_001/cover.jpg",
+      cover_source: null,
       category_level_1: "public-service",
       category_level_2: "community-center",
       tag_ids: ["service", "family", "community"],
@@ -221,12 +225,15 @@ export const createMockDataset = (): MockDataset => ({
       business_hours_zh: "周一至周日 09:00-18:00",
       business_hours_en: "Mon-Sun 09:00-18:00",
       intro_zh: "社区活动、公告展示和居民服务的主要线下节点。",
-      intro_en: "Main offline hub for events, announcements, and resident services.",
+      intro_en:
+        "Main offline hub for events, announcements, and resident services.",
       recommended_reason_zh: "初次到访桐梓林时最适合先了解社区服务的地点。",
-      recommended_reason_en: "Best first stop to understand local community services.",
+      recommended_reason_en:
+        "Best first stop to understand local community services.",
       is_recommended: true,
       recommended_rank: 1,
       gallery_file_ids: ["cloud://place-001-1"],
+      external_gallery_media: [],
       gallery_urls: [],
       supports_navigation: true,
       supports_favorite: true,
@@ -240,6 +247,7 @@ export const createMockDataset = (): MockDataset => ({
       name_en: "Global Corner Cafe",
       cover_file_id: "cloud://place-cover-002",
       cover_url: "https://example.com/public/places/place_002/cover.jpg",
+      cover_source: null,
       category_level_1: "food-drink",
       category_level_2: "cafe",
       tag_ids: ["coffee", "social", "english-friendly"],
@@ -255,10 +263,12 @@ export const createMockDataset = (): MockDataset => ({
       intro_zh: "适合国际居民会面和英语角的咖啡空间。",
       intro_en: "A cafe often used for meet-ups and language exchange.",
       recommended_reason_zh: "适合第一次和邻里见面，环境对外籍居民友好。",
-      recommended_reason_en: "A friendly meet-up spot for newcomers and neighbors.",
+      recommended_reason_en:
+        "A friendly meet-up spot for newcomers and neighbors.",
       is_recommended: true,
       recommended_rank: 2,
       gallery_file_ids: ["cloud://place-002-1"],
+      external_gallery_media: [],
       gallery_urls: [],
       supports_navigation: true,
       supports_favorite: true,
@@ -272,6 +282,7 @@ export const createMockDataset = (): MockDataset => ({
       name_en: "Tongzilin Service Point",
       cover_file_id: null,
       cover_url: null,
+      cover_source: null,
       category_level_1: "public-service",
       category_level_2: "service-desk",
       tag_ids: ["service", "documents"],
@@ -291,6 +302,7 @@ export const createMockDataset = (): MockDataset => ({
       is_recommended: false,
       recommended_rank: 0,
       gallery_file_ids: [],
+      external_gallery_media: [],
       gallery_urls: [],
       supports_navigation: true,
       supports_favorite: true,
@@ -318,7 +330,8 @@ export const createMockDataset = (): MockDataset => ({
       author_user_id: "user_002",
       community_id: "tongzilin",
       title: "Any tennis groups in Tongzilin?",
-      content: "Looking for a weekend tennis group within 20 minutes from Tongzilin.",
+      content:
+        "Looking for a weekend tennis group within 20 minutes from Tongzilin.",
       language: "en",
       tag_ids: ["sports", "social"],
       location_text: null,
@@ -373,11 +386,14 @@ export const createMockDataset = (): MockDataset => ({
       title_zh: "清明节期间社区开放时间调整",
       title_en: "Community Center Hours for Qingming Festival",
       summary_zh: "4 月 4 日至 4 月 6 日部分服务时段调整。",
-      summary_en: "Some resident services will operate on adjusted hours from Apr 4 to Apr 6.",
+      summary_en:
+        "Some resident services will operate on adjusted hours from Apr 4 to Apr 6.",
       content_zh: "请提前预约线下窗口服务，活动报名不受影响。",
-      content_en: "Please reserve offline service slots in advance. Event registrations stay open.",
+      content_en:
+        "Please reserve offline service slots in advance. Event registrations stay open.",
       cover_file_id: "cloud://announcement-cover-001",
-      cover_url: "https://example.com/public/announcements/announcement_001/cover.jpg",
+      cover_url:
+        "https://example.com/public/announcements/announcement_001/cover.jpg",
       status: "published",
       published_at: "2026-03-26T12:00:00+08:00"
     }

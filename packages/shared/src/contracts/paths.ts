@@ -43,8 +43,11 @@ export const apiPaths = {
     moderatePost: (id: string) => `/admin/discover/posts/${id}/moderation`,
     listPlaces: "/admin/places",
     searchPlacePoi: "/admin/places/poi-search",
+    searchPlaceAmapMedia: "/admin/places/amap-media-search",
     createPlace: "/admin/places",
     updatePlace: (id: string) => `/admin/places/${id}`,
-    deletePlace: (id: string) => `/admin/places/${id}`
+    deletePlace: (id: string) => `/admin/places/${id}`,
+    uploadPendingPlaceGalleryFile: "/admin/places/gallery-files",
+    uploadPlaceGalleryFile: (id: string) => `/admin/places/${id}/gallery-files`
   }
 };

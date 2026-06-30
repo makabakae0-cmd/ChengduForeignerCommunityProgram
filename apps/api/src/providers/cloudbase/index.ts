@@ -2,8 +2,12 @@ import { randomUUID } from "node:crypto";
 
 import tcb from "@cloudbase/node-sdk";
 import {
+  FILE_PATH_RULES,
   PLACE_TOP_LEVEL_CATEGORIES,
+  PENDING_PLACE_GALLERY_BIZ_ID,
+  FileAssetSchema,
   PlaceSchema,
+  type FileAsset,
   type PageResult,
   type Place,
   type PlaceDetail,
@@ -22,10 +26,12 @@ type CloudbaseApp = ReturnType<typeof tcb.init>;
 type PlacesCollection = ReturnType<
   ReturnType<ReturnType<typeof tcb.init>["database"]>["collection"]
 >;
+type FileAssetsCollection = PlacesCollection;
 
 interface LiveCloudbaseContext {
   app: CloudbaseApp;
   places: PlacesCollection;
+  fileAssets: FileAssetsCollection;
 }
 
 const cleanUpdate = <TInput extends Record<string, unknown>>(input: TInput) =>
@@ -181,6 +187,7 @@ const toPlaceDetail = async (
     name_zh: place.name_zh,
     name_en: place.name_en,
     cover_url: place.cover_url,
+    cover_source: place.cover_source,
     category_level_1: place.category_level_1,
     category_level_2: place.category_level_2,
     tag_ids: place.tag_ids,
@@ -192,6 +199,7 @@ const toPlaceDetail = async (
     intro_zh: place.intro_zh,
     intro_en: place.intro_en,
     gallery_media,
+    external_gallery_media: place.external_gallery_media,
     gallery_urls: gallery_media.map((media) => media.url),
     is_recommended: place.is_recommended,
     recommended_reason_zh: place.recommended_reason_zh,
@@ -231,7 +239,8 @@ const createLiveContext = (): LiveCloudbaseContext | null => {
 
   return {
     app,
-    places: db.collection("places")
+    places: db.collection("places"),
+    fileAssets: db.collection("file_assets")
   };
 };
 
@@ -255,6 +264,7 @@ const createPlaceFromInput = (input: Partial<Place>): Place =>
     name_en: input.name_en ?? "",
     cover_file_id: input.cover_file_id ?? null,
     cover_url: input.cover_url ?? null,
+    cover_source: input.cover_source ?? null,
     category_level_1: input.category_level_1 ?? PLACE_TOP_LEVEL_CATEGORIES[0],
     category_level_2: input.category_level_2 ?? "",
     tag_ids: input.tag_ids ?? [],
@@ -271,6 +281,7 @@ const createPlaceFromInput = (input: Partial<Place>): Place =>
     is_recommended: input.is_recommended ?? false,
     recommended_rank: input.recommended_rank ?? 0,
     gallery_file_ids: input.gallery_file_ids ?? [],
+    external_gallery_media: input.external_gallery_media ?? [],
     gallery_urls: input.gallery_urls ?? [],
     supports_navigation: input.supports_navigation ?? true,
     supports_favorite: input.supports_favorite ?? true,
@@ -278,6 +289,46 @@ const createPlaceFromInput = (input: Partial<Place>): Place =>
     status: input.status ?? "draft",
     import_review: input.import_review ?? null
   });
+
+const sanitizeFileName = (fileName: string) =>
+  fileName.replace(/[^\w.-]+/g, "-").replace(/^-+/, "") || "gallery-upload";
+
+const rebindPendingGalleryAssets = async (
+  context: LiveCloudbaseContext,
+  placeId: string,
+  galleryFileIds: string[]
+) => {
+  if (galleryFileIds.length === 0) {
+    return;
+  }
+
+  const result = await (
+    context.fileAssets as unknown as {
+      where(query: Record<string, unknown>): {
+        limit(count: number): {
+          get(): Promise<{ data: Array<FileAsset & { _id: string }> }>;
+        };
+      };
+    }
+  )
+    .where({
+      biz_type: "place_gallery",
+      biz_id: PENDING_PLACE_GALLERY_BIZ_ID
+    })
+    .limit(1000)
+    .get();
+
+  const galleryFileIdSet = new Set(galleryFileIds);
+  await Promise.all(
+    result.data
+      .filter((asset) => galleryFileIdSet.has(asset.file_id))
+      .map((asset) =>
+        context.fileAssets.doc(asset._id).update({
+          biz_id: placeId
+        })
+      )
+  );
+};
 
 const createLivePlacesProvider = (
   context: LiveCloudbaseContext
@@ -356,6 +407,11 @@ const createLivePlacesProvider = (
   async create(input) {
     const place = createPlaceFromInput(input);
     await context.places.doc(place._id).set(toCloudbaseSetDocument(place));
+    await rebindPendingGalleryAssets(
+      context,
+      place._id,
+      place.gallery_file_ids
+    );
     return place;
   },
   async update(id, input) {
@@ -384,6 +440,65 @@ const createLivePlacesProvider = (
 
     await context.places.doc(id).remove();
     return { deleted_id: id };
+  },
+  async uploadGalleryFile(id, input, actorId = "user_001") {
+    const places = id ? await readPlaces(context) : [];
+    const existing = id ? places.find((place) => place._id === id) : null;
+
+    if (id && !existing) {
+      return null;
+    }
+
+    const targetPath = id ?? `_pending/${randomUUID()}`;
+    const cloudPath = `${FILE_PATH_RULES.placeGallery}${targetPath}/${randomUUID()}-${sanitizeFileName(input.file_name)}`;
+    const uploadResult = await (
+      context.app as unknown as {
+        uploadFile(input: {
+          cloudPath: string;
+          fileContent: Buffer;
+        }): Promise<{ fileID?: string; fileId?: string }>;
+      }
+    ).uploadFile({
+      cloudPath,
+      fileContent: input.buffer
+    });
+    const fileId =
+      uploadResult.fileID ??
+      uploadResult.fileId ??
+      `cloud://${getCloudbaseEnvId()}/${cloudPath}`;
+    const asset = FileAssetSchema.parse({
+      _id: `file_${randomUUID()}`,
+      file_id: fileId,
+      cloud_path: cloudPath,
+      visibility: "public",
+      biz_type: "place_gallery",
+      biz_id: id ?? PENDING_PLACE_GALLERY_BIZ_ID,
+      uploaded_by: actorId,
+      status: "active"
+    } satisfies FileAsset);
+    const gallery_file_ids = existing
+      ? [...existing.gallery_file_ids, asset.file_id]
+      : [asset.file_id];
+
+    await context.fileAssets.doc(asset._id).set({
+      file_id: asset.file_id,
+      cloud_path: asset.cloud_path,
+      visibility: asset.visibility,
+      biz_type: asset.biz_type,
+      biz_id: asset.biz_id,
+      uploaded_by: asset.uploaded_by,
+      status: asset.status
+    });
+    if (id) {
+      await context.places.doc(id).update({
+        gallery_file_ids
+      });
+    }
+
+    return {
+      file_asset: asset,
+      gallery_file_ids
+    };
   }
 });
 
