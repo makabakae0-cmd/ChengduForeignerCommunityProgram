@@ -7,6 +7,12 @@ import { appCopy } from "@/i18n/copy";
 import { placesPagePaths } from "@/pages/places/navigation";
 import { pickLocalized, useAppStore } from "@/stores/app-store";
 
+declare const wx:
+  | {
+      getWindowInfo?: () => { windowHeight?: number };
+    }
+  | undefined;
+
 const { state } = useAppStore();
 const copy = computed(() => appCopy[state.locale]);
 const events = ref<Array<any>>([]);
@@ -47,10 +53,32 @@ const quickSidebarStyle = computed(() => ({
 
 const getWindowHeight = () => {
   try {
-    return uni.getSystemInfoSync().windowHeight;
+    const uniWithWindowInfo = uni as typeof uni & {
+      getWindowInfo?: () => { windowHeight?: number };
+    };
+
+    if (typeof uniWithWindowInfo.getWindowInfo === "function") {
+      const height = uniWithWindowInfo.getWindowInfo().windowHeight;
+      if (typeof height === "number" && height > 0) {
+        return height;
+      }
+    }
+
+    if (typeof wx !== "undefined" && typeof wx.getWindowInfo === "function") {
+      const height = wx.getWindowInfo().windowHeight;
+      if (typeof height === "number" && height > 0) {
+        return height;
+      }
+    }
+
+    if (typeof window !== "undefined" && window.innerHeight > 0) {
+      return window.innerHeight;
+    }
   } catch {
-    return 667;
+    // fall through to default height
   }
+
+  return 667;
 };
 
 const clampSidebarTop = (top: number, estimatedHeight = quickSidebarOpen.value ? 260 : 72) => {
